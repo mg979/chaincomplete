@@ -38,7 +38,7 @@ M.buffers = {}
 M.auto = require'chaincomplete.auto'.init(M)
 M.async = require'chaincomplete.async'.init(M)
 
-local function get_chain(bnr)
+local function get_chain(bnr) -- {{{1
   bnr = bnr or bufnr()
   if M.buffers[bnr] then
     return M.buffers[bnr]
@@ -46,6 +46,8 @@ local function get_chain(bnr)
   M.buffers[bnr] = vim.b.completion_chain or util.default_chain()
   return M.buffers[bnr]
 end
+
+-- }}}
 
 function M.complete(advancing)
   local chain, ret = get_chain(), ''
@@ -115,6 +117,41 @@ function M.async_complete(method)
   local isLast = index == #get_chain()
   M.async.start(methods[method], isLast)
   return methods[method].keys or ''
+end
+
+-------------------------------------------------------------------------------
+-- Set chain for buffer
+-------------------------------------------------------------------------------
+
+local function chain_from_input() -- {{{1
+  local oldchain = table.concat(get_chain(), ', ')
+  local chain = vim.fn.input('Enter a new chain: ', oldchain)
+  if chain == '' then
+    return nil
+  end
+  local newchain = {}
+  for v in chain:gmatch('[a-z-]+') do
+    if methods[v] then
+      table.insert(newchain, v)
+    end
+  end
+  return newchain
+end
+
+-- }}}
+
+function M.set(bang, args)
+  local chain
+  if args == 'reset' then
+    M.buffers[bufnr()] = util.default_chain()
+  elseif bang == 1 then
+    chain = chain_from_input()
+    if chain then
+      M.buffers[bufnr()] = chain
+    end
+  end
+  vim.cmd('redraw')
+  print('current chain: ' .. table.concat(get_chain(), ', '))
 end
 
 return M

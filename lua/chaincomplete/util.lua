@@ -1,6 +1,7 @@
 local col = vim.fn.col
 local line = vim.fn.line
 local getlines = vim.api.nvim_buf_get_lines
+local sl = vim.fn.has('win32') == 1 and '\\' or '/'
 
 local util = {}
 
@@ -15,12 +16,9 @@ local function prefix(length)
   return c > length - 1 and getlines(0, l - 1, l, true)[1]:sub(c - length, c) or ''
 end
 
-----
--- util.has_words_before
--- @return: true if there are enough word characters before cursor
-----
-function util.has_words_before()
-  return prefix(3):match("^%w+$")
+function util.can_autocomplete()
+  local c = prefix(3)
+  return c:match("^%w+$") or c:match("%.$") or c:match("->$")
 end
 
 function util.wordchar_before()
@@ -29,7 +27,7 @@ end
 
 function util.filechar_before()
   local c = prefix(1)
-  return c:match("%w") or c:match("%p")
+  return c == sl or c:match("%w") or c:match("%p")
 end
 
 function util.dot_before()
