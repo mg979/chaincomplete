@@ -1,17 +1,21 @@
+-- local variables {{{1
 local util = require'chaincomplete.util'
 local resume = util.keys('<Plug>(ChainResume)')
 local mode = vim.fn.mode
 local pumvisible = vim.fn.pumvisible
+local wrap = vim.schedule_wrap
+local new_timer = vim.loop.new_timer
 local chaincomplete
+--}}}
 
 local async = {}
 
-function async.init(cc)
+function async.init(cc) -- {{{1
   chaincomplete = cc
   return async
 end
 
-function async.start(m, isLast)
+function async.start(m, isLast) -- {{{1
   m.items = nil -- clear previous items if any
   if m.handler then m.handler() end
   m.time = m.time or 50
@@ -19,20 +23,21 @@ function async.start(m, isLast)
   async.m = m
   async.canAdvance = not isLast
   async.current = 0
-  async.timer = vim.fn.timer_start(m.time, async.callback)
+  async.timer = new_timer()
+  async.timer:start(m.timeout, m.time, wrap(async.callback))
   vim.cmd([[
     au InsertLeave,BufLeave,InsertCharPre <buffer> call v:lua.chaincomplete.async.stop()
   ]])
 end
 
-function async.stop()
+function async.stop() -- {{{1
   if async.timer then
-    vim.fn.timer_stop(async.timer)
+    async.timer:close()
     async.timer = nil
   end
 end
 
-function async.callback()
+function async.callback() -- {{{1
   if mode():match('[iR]') or pumvisible() == 1 then
     return async.stop()
   end
@@ -49,10 +54,12 @@ function async.callback()
   end
 end
 
-function async.finish()
+function async.finish() -- {{{1
   if pumvisible() == 0 and async.canAdvance then
     util.feedkeys(resume, 'm', false)
   end
 end
+
+-- }}}
 
 return async
