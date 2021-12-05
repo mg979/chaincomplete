@@ -17,12 +17,12 @@ local reset_if_not_pumvisible = eq .. '=pumvisible() ? "" : "' .. cg .. '"' .. c
 
 -- sequences of keys to feed for different types of methods
 local vsq = eq .. '=pumvisible() ? v:lua.chaincomplete.flag() : v:lua.chaincomplete.set_index("%s") . "' .. cg .. '%s"' .. cr
-local hsq = eq .. '=pumvisible() ? v:lua.chaincomplete.flag() : v:lua.chaincomplete.set_index("%s") . v:lua.chaincomplete.handler_complete("%s")' .. cr
-local asq = eq .. '=pumvisible() ? v:lua.chaincomplete.flag() : v:lua.chaincomplete.set_index("%s") . v:lua.chaincomplete.async_complete("%s")' .. cr
+local hsq = eq .. '=pumvisible() ? v:lua.chaincomplete.flag() : v:lua.chaincomplete.handler_complete("%s")' .. cr
+local asq = eq .. '=pumvisible() ? v:lua.chaincomplete.flag() : v:lua.chaincomplete.async_complete("%s")' .. cr
 
 local function verify_seq(m, k) return string.format(vsq, m, k) end
-local function async_seq(m)     return string.format(asq, m, m) end
-local function handler_seq(m)   return string.format(hsq, m, m) end
+local function async_seq(m)     return string.format(asq, m) end
+local function handler_seq(m)   return string.format(hsq, m) end
 
 -------------------------------------------------------------------------------
 
@@ -105,11 +105,13 @@ function M.set_index(m)
 end
 
 function M.handler_complete(method)
+  M.set_index(method)
   local m = methods[method]
   return m.handler() or m.keys or ''
 end
 
 function M.async_complete(method)
+  M.set_index(method)
   local isLast = index == #get_chain()
   M.async.start(methods[method], isLast)
   return methods[method].keys or ''
