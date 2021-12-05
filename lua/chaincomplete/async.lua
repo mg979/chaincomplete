@@ -49,8 +49,6 @@ function async.callback() -- {{{1
 
   if async.m.items then
     chaincomplete.invoke(async.m)
-  else
-    async.timer = vim.fn.timer_start(async.m.time, async.callback)
   end
 end
 
