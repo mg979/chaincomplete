@@ -1,4 +1,7 @@
 local util = require'chaincomplete.util'
+local bufnr = vim.fn.bufnr
+
+local clients = {}
 
 local wordchar_before = util.wordchar_before
 local filechar_before = util.filechar_before
@@ -12,7 +15,17 @@ local function try_omni() -- {{{1
 end
 
 local function try_lsp() -- {{{1
-  return next(vim.lsp.buf_get_clients())
+  local client = clients[bufnr()]
+  if client and not client.is_stopped() then
+    return wordchar_before() or dot_before() or arrow_before()
+  end
+  for _, c in ipairs(vim.lsp.buf_get_clients()) do
+    if not c.is_stopped() and c.server_capabilities.completionProvider then
+      clients[bufnr()] = c
+      break
+    end
+  end
+  return clients[bufnr()] and wordchar_before() or dot_before() or arrow_before()
 end
 
 local function try_user() -- {{{1
