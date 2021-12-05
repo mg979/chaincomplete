@@ -1,8 +1,19 @@
+-- local variables {{{1
 local util = require'chaincomplete.util'
 local chaincomplete
+local timer
+local pumvisible = vim.fn.pumvisible
+local wrap = vim.schedule_wrap
+local can_autocomplete = require'chaincomplete.util'.can_autocomplete
+local open_popup = util.keys('<Plug>(ChainComplete)')
+--}}}
+
+-------------------------------------------------------------------------------
+-- Initialization, enable, disable, toggle
+-------------------------------------------------------------------------------
 local auto = {}
 
-function auto.init(cc)
+function auto.init(cc) -- {{{1
   chaincomplete = cc
   return auto
 end
@@ -46,15 +57,15 @@ end
 
 -- }}}
 
-local timer
-local pumvisible = vim.fn.pumvisible
-local has_word_before = require'chaincomplete.util'.has_word_before
-local open_popup = util.keys('<Plug>(ChainComplete)')
+-------------------------------------------------------------------------------
+-- Autocompletion timer
+-------------------------------------------------------------------------------
 
 function auto.start() -- {{{1
   auto.stop()
-  if pumvisible() == 1 then
-    timer = vim.defer_fn(auto.complete, 100)
+  if pumvisible() == 0 then
+    timer = vim.loop.new_timer()
+    timer:start(100, 0, wrap(auto.complete))
   end
 end
 
@@ -67,7 +78,7 @@ end
 
 function auto.complete() -- {{{1
   auto.stop()
-  if pumvisible() == 0 and has_word_before() then
+  if pumvisible() == 0 and can_autocomplete() then
     util.feedkeys(open_popup, 'm', false)
   end
 end
