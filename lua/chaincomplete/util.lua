@@ -13,7 +13,7 @@ end
 
 local function prefix(length)
   local l, c = line('.'), col('.')
-  return c > length - 1 and getlines(0, l - 1, l, true)[1]:sub(c - length, c) or ''
+  return c > length and getlines(0, l - 1, l, true)[1]:sub(c - length, c) or ''
 end
 
 function util.can_autocomplete()
