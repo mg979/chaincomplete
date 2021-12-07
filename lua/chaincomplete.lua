@@ -28,9 +28,6 @@ local function handler_seq(m)   return string.format(hsq, m) end
 
 local M = {}
 
--- current position in the chain
-local index = 1
-
 -- table with buffers and their active chain
 M.buffers = {}
 
@@ -50,8 +47,12 @@ end
 
 -- }}}
 
+local chain     -- current chain
+local index = 1 -- current position in the chain
+
 function M.complete(advancing)
-  local chain, ret = get_chain(), ''
+  chain = get_chain()
+  local ret = ''
   if pumvisible() == 1 then
     return chain._invert and cp or cn
   end
@@ -82,23 +83,22 @@ function M.advance()
   if pumvisible() == 0 then
     return M.complete()
   end
-  index = index % #get_chain() + 1
+  index = index % #chain + 1
   return ce .. eq .. '=v:lua.chaincomplete.complete(1)' .. cr
 end
 
 function M.resume()
-  index = index % #get_chain() + 1
+  index = index % #chain + 1
   return index > 1 and M.complete(true) or ''
 end
 
 function M.flag()
-  local chain = get_chain()
   chain._invert = methods[chain[index]].invert
   return ''
 end
 
 function M.set_index(m)
-  for i, method in ipairs(get_chain()) do
+  for i, method in ipairs(chain) do
     if method == m then
       index = i
       break
@@ -115,7 +115,7 @@ end
 
 function M.async_complete(method)
   M.set_index(method)
-  local isLast = index == #get_chain()
+  local isLast = index == #chain
   M.async.start(methods[method], isLast)
   return methods[method].keys or ''
 end
@@ -125,13 +125,13 @@ end
 -------------------------------------------------------------------------------
 
 local function chain_from_input() -- {{{1
-  local oldchain = table.concat(get_chain(), ', ')
-  local chain = vim.fn.input('Enter a new chain: ', oldchain)
-  if chain == '' then
+  local oldchain = table.concat(chain, ', ')
+  local input = vim.fn.input('Enter a new chain: ', oldchain)
+  if input == '' then
     return nil
   end
   local newchain = {}
-  for v in chain:gmatch('[a-z-]+') do
+  for v in input:gmatch('[a-z-]+') do
     if methods[v] then
       table.insert(newchain, v)
     end
@@ -142,17 +142,17 @@ end
 -- }}}
 
 function M.set(bang, args)
-  local chain
   if args == 'reset' then
     M.buffers[bufnr()] = util.default_chain()
   elseif bang == 1 then
-    chain = chain_from_input()
-    if chain then
-      M.buffers[bufnr()] = chain
+    local newchain = chain_from_input()
+    if newchain then
+      M.buffers[bufnr()] = newchain
     end
   end
+  chain = M.buffers[bufnr()]
   vim.cmd('redraw')
-  print('current chain: ' .. table.concat(get_chain(), ', '))
+  print('current chain: ' .. table.concat(chain, ', '))
 end
 
 return M

@@ -27,7 +27,7 @@ command! -bar           ChainCompleteAutoToggle  call s:call('v:lua.chaincomplet
 command! -bang -nargs=? ChainCompleteAutoTrigger call s:call('v:lua.chaincomplete.dot.init(' . <bang>0 . ', ' . <q-args> . ')')
 
 " show/set/reset chain
-command! -bang -nargs=? ChainComplete            call s:call('v:lua.chaincomplete.set(' . <bang>0 . ', ' . <q-args> . ')')
+command! -bang -nargs=? ChainComplete            call s:call('v:lua.chaincomplete.set(' . <bang>0 . ', "' . <q-args> . '")')
 
 inoremap <silent> <Plug>(ChainComplete)   <C-r>=v:lua.chaincomplete.complete()<CR>
 inoremap <silent> <Plug>(ChainAdvance)    <C-r>=v:lua.chaincomplete.advance()<CR>
