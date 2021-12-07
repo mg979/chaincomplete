@@ -50,6 +50,7 @@ endfun
 set completeopt+=menuone
 
 au InsertEnter * ++once lua chaincomplete = require'chaincomplete'
+au CompleteChanged * lua chaincomplete.docpopup.open(vim.v.event.completed_item)
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " vim: et sw=4 ts=4 sts=4 fdm=marker

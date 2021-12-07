@@ -7,6 +7,11 @@ local util = {}
 
 util.feedkeys = vim.api.nvim_feedkeys
 
+function util.getline(l)
+  l = l or line('.')
+  return getlines(0, l - 1, l, true)[1]
+end
+
 function util.keys(keys)
   return vim.api.nvim_replace_termcodes(keys, true, false, true)
 end

@@ -37,6 +37,7 @@ M.buffers = {}
 -- autocompletion and async handlers
 M.auto = require'chaincomplete.auto'.init(M)
 M.async = require'chaincomplete.async'.init(M)
+M.docpopup = require'chaincomplete.docpopup'
 
 local function get_chain(bnr) -- {{{1
   bnr = bnr or bufnr()
