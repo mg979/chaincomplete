@@ -16,9 +16,9 @@ local reset_if_not_pumvisible = eq .. '=pumvisible() ? "" : "' .. cg .. '"' .. c
 --------------------------------------------------------------------------------
 
 -- sequences of keys to feed for different types of methods
-local vsq = eq .. '=pumvisible() ? v:lua.chaincomplete.flag() : v:lua.chaincomplete.set_index("%s") . "' .. cg .. '%s"' .. cr
-local hsq = eq .. '=pumvisible() ? v:lua.chaincomplete.flag() : v:lua.chaincomplete.handler_complete("%s")' .. cr
-local asq = eq .. '=pumvisible() ? v:lua.chaincomplete.flag() : v:lua.chaincomplete.async_complete("%s")' .. cr
+local vsq = eq .. '=pumvisible() ? "" : v:lua.chaincomplete.set_index("%s") . "' .. cg .. '%s"' .. cr
+local hsq = eq .. '=pumvisible() ? "" : v:lua.chaincomplete.handler_complete("%s")' .. cr
+local asq = eq .. '=pumvisible() ? "" : v:lua.chaincomplete.async_complete("%s")' .. cr
 
 local function verify_seq(m, k) return string.format(vsq, m, k) end
 local function async_seq(m)     return string.format(asq, m) end
@@ -52,13 +52,13 @@ local index = 1 -- current position in the chain
 
 function M.complete(advancing)
   chain = get_chain()
-  local ret = ''
   if pumvisible() == 1 then
-    return chain._invert and cp or cn
+    return methods[chain[index]].invert and cp or cn
   end
   if not advancing then
     index = 1
   end
+  local ret = ''
   for i = index, #chain do
     local method = chain[i]
     local m = methods[method]
@@ -90,11 +90,6 @@ end
 function M.resume()
   index = index % #chain + 1
   return index > 1 and M.complete(true) or ''
-end
-
-function M.flag()
-  chain._invert = methods[chain[index]].invert
-  return ''
 end
 
 function M.set_index(m)

@@ -10,6 +10,7 @@
 if !has('nvim') || exists('g:loaded_chaincomplete')
     finish
 endif
+let g:loaded_chaincomplete = 1
 " }}}
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
