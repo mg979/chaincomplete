@@ -19,12 +19,8 @@ function async.start(m, isLast)
   async.timer = vim.defer_fn(async.callback, async.time)
   if m.handler then m.handler(async) end
   vim.cmd([[
-    au InsertLeave,BufLeave,InsertCharPre <buffer> call v:lua.chaincomplete.async.stop()
+    au InsertLeave,BufLeave,InsertCharPre <buffer> ++once lua chaincomplete.async.canceled = true
   ]])
-end
-
-function async.stop()
-  async.canceled = true
 end
 
 function async.callback()
