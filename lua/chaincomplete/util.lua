@@ -24,13 +24,13 @@ end
 --- @return boolean
 function util.can_autocomplete()
   local c = prefix(3)
-  return c:match("^%w+$") or c:match("%.$") or c:match("->$")
+  return c:match("^[%w_]+$") or c:match("%.$") or c:match("->$")
 end
 
 --- If character before cursor is a 'word' character.
 --- @return boolean
 function util.wordchar_before()
-  return prefix(1):match("%w")
+  return prefix(1):match("[%w_]")
 end
 
 --- If character before cursor is a 'word' character or punctuation.
