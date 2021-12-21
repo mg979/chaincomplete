@@ -38,6 +38,8 @@ function M.open(item)
     return vim.defer_fn(function()
       prepare_popup(nil, { contents = { value = item.info } })
     end, 20)
+  else
+    return win.close()
   end
 end
 

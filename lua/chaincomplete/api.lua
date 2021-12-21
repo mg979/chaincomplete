@@ -24,6 +24,7 @@ local api = {}
 
 api.buf_is_valid        = vim.api.nvim_buf_is_valid
 api.buf_set_lines       = vim.api.nvim_buf_set_lines
+api.buf_get_option      = vim.api.nvim_buf_get_option
 api.buf_set_option      = vim.api.nvim_buf_set_option
 api.close_on_events     = vim.lsp.util.close_preview_autocmd
 api.create_buf          = vim.api.nvim_create_buf
