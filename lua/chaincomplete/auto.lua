@@ -1,5 +1,6 @@
 -- local variables {{{1
 local util = require'chaincomplete.util'
+local api = require'chaincomplete.api'
 local settings = require'chaincomplete.settings'
 local timer
 local pumvisible = vim.fn.pumvisible
@@ -73,7 +74,7 @@ end
 function auto.complete()
   auto.stop()
   if pumvisible() == 0 and can_autocomplete() then
-    util.feedkeys(open_popup, 'm', false)
+    api.feedkeys(open_popup, 'm', false)
   end
 end
 

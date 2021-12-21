@@ -14,6 +14,8 @@ let g:loaded_chaincomplete = 1
 " }}}
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Commands
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " enable completion for current buffer
 command! -bar           ChainCompleteAutoEnable  call s:call('v:lua.chaincomplete.auto.enable(1)')
@@ -30,6 +32,15 @@ command! -bang -nargs=? ChainCompleteAutoTrigger call s:call('v:lua.chaincomplet
 " show/set/reset chain
 command! -bang -nargs=? ChainComplete            call s:call('v:lua.chaincomplete.set(' . <bang>0 . ', "' . <q-args> . '")')
 
+fun! s:call(func)   "{{{1
+    lua chaincomplete = require'chaincomplete'
+    exe 'call' a:func
+endfun "}}}
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Plugs and mappings
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 inoremap <silent> <Plug>(ChainComplete)   <C-r>=v:lua.chaincomplete.complete()<CR>
 inoremap <silent> <Plug>(ChainAdvance)    <C-r>=v:lua.chaincomplete.advance()<CR>
 inoremap <silent> <Plug>(ChainResume)     <C-r>=v:lua.chaincomplete.resume()<CR>
@@ -42,10 +53,9 @@ if empty(maparg('<C-j>', 'i')) && !hasmapto('<Plug>(ChainAdvance)')
     imap <C-j>  <Plug>(ChainAdvance)
 endif
 
-fun! s:call(func)
-    lua chaincomplete = require'chaincomplete'
-    exe 'call' a:func
-endfun
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Initialization
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " Needed for popup check
 set completeopt+=menuone

@@ -1,6 +1,6 @@
 local M = {}
 
-function M.invoke()
+function M.invoke(items)
   return items
 end
 

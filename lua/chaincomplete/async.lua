@@ -1,5 +1,6 @@
 -- local variables {{{1
 local util = require'chaincomplete.util'
+local api = require'chaincomplete.api'
 local completeitems = require'chaincomplete.completeitems'
 local resume = util.keys('<Plug>(ChainResume)')
 local mode = vim.fn.mode
@@ -49,7 +50,7 @@ end
 
 function async.finish()
   if pumvisible() == 0 and async.canAdvance then
-    util.feedkeys(resume, 'm', false)
+    api.feedkeys(resume, 'm', false)
   end
 end
 
