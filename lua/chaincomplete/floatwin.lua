@@ -1,14 +1,19 @@
 local strwidth = vim.str_utfindex
 local api = require'chaincomplete.api'
+local settings = require'chaincomplete.settings'
 
 local win = {}
+
+local close_events = { "CompleteDone", "InsertLeave", "BufLeave" }
+local BCOL, BROW  -- extra width/height for borders, if any
 
 --- Default popup options
 --- @return table options
 local function floatopts()
+  BCOL, BROW = settings._bcol, settings._brow
   return {
-    border = 'single',
-    relative = 'win',
+    border = settings.border,
+    relative = 'editor',
     style = 'minimal',
   }
 end
@@ -24,33 +29,39 @@ local function styleopts()
   }
 end
 
-local close_events = { "CompleteDone", "InsertLeave", "BufLeave" }
-
 --- Get the floating window position.
 --- @param lines table
 --- @return number row, number column
-local function get_winpos(pum, lines)
-  local row = pum.row - 1
+local function get_winpos(pum, lines, width, height)
+  local row = pum.row
   local col = pum.col + pum.width + (pum.scrollbar and 1 or 0)
-  -- local col = pum.width + (pum.scrollbar and 1 or 0)
+  if col + width > vim.o.columns - 2 then
+    col = pum.col - width - BCOL
+  end
+  if col < 0 then
+    col = pum.col
+    row = pum.row + pum.size
+    if row + height > vim.o.lines then
+      row = pum.row - height - BROW
+    end
+  end
   return row, col
 end
 
 --- Get the width of the floating popup from the longest line of its content.
 --- @param lines table
 --- @return number
-local function get_popup_width(pum, lines)
-  local col = pum.col + pum.width + (pum.scrollbar and 1 or 0)
-  local max, free = 0, vim.o.columns - col - 2
+local function get_popup_width(lines)
+  local w, max = 0, 60
   for _, l in ipairs(lines) do
-    local sw = strwidth(l)
-    if sw > free then
-      return free
-    elseif sw > max then
-      max = sw
+    local lw = strwidth(l)
+    if lw > max then
+      return max
+    elseif lw > w then
+      w = lw
     end
   end
-  return max + 2
+  return w
 end
 
 --- Lines to show in the popup.
@@ -69,9 +80,9 @@ end
 --- @return table, table: floating window options, style options
 local function make_options(pum, lines)
   local fopts, sopts = floatopts(), styleopts()
-  fopts.width = get_popup_width(pum, lines)
+  fopts.width = get_popup_width(lines)
   fopts.height = #lines
-  fopts.row, fopts.col = get_winpos(pum, lines)
+  fopts.row, fopts.col = get_winpos(pum, lines, fopts.width, fopts.height)
   sopts.max_width = fopts.width
   return fopts, sopts
 end
