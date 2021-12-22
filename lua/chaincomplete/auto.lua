@@ -24,8 +24,8 @@ function auto.enable()
     [[
   augroup chaincomplete_auto
     au!
-    autocmd InsertCharPre * noautocmd call v:lua.chaincomplete.auto.start()
-    autocmd InsertLeave   * noautocmd call v:lua.chaincomplete.auto.stop()
+    autocmd CursorMovedI * noautocmd call v:lua.chaincomplete.auto.start()
+    autocmd InsertLeave  * noautocmd call v:lua.chaincomplete.auto.stop()
   augroup END
   ]]) -- }}}
 end
