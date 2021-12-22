@@ -56,14 +56,14 @@ end
 --- @return table chain
 function util.default_chain()
   if vim.o.omnifunc == 'v:lua.vim.lsp.omnifunc' then
-    return settings.default_chain_lsp
+    return settings.chain_lsp
   end
   for _, client in pairs(vim.lsp.buf_get_clients()) do
     if client.resolved_capabilities.completion then
-      return settings.default_chain_lsp
+      return settings.chain_lsp
     end
   end
-  return settings.default_chain_nolsp
+  return settings.chain_nolsp
 end
 
 return util

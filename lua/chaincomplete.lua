@@ -196,22 +196,19 @@ local function chain_from_input()
 end
 
 function M.set(bang, args)
+  local newchain
   if args == 'reset' then
-    M.buffers[bufnr()] = util.default_chain()
+    newchain = util.default_chain()
   elseif bang == 1 then
-    local newchain = chain_from_input()
-    if newchain then
-      M.buffers[bufnr()] = newchain
-    end
+    newchain = chain_from_input()
   elseif args ~= '' then
-    local newchain = verify_chain(args)
-    if newchain then
-      M.buffers[bufnr()] = newchain
-    end
+    newchain = verify_chain(args)
   end
-  chain = get_chain()
+  if newchain then
+    M.buffers[bufnr()] = newchain
+  end
   vim.cmd('redraw')
-  print('current chain: ' .. table.concat(chain, ', '))
+  print('current chain: ' .. table.concat(get_chain(), ', '))
 end
 
 return M

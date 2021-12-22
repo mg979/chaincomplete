@@ -2,8 +2,8 @@ local settings = {
   border = 'single',
   autocomplete = false,
   docpopup = true,
-  default_chain_lsp = { 'file', 'lsp', 'user', 'c-n' },
-  default_chain_nolsp = { 'file', 'omni', 'user', 'c-n' },
+  chain_lsp = { 'file', 'lsp', 'user', 'c-n' },
+  chain_nolsp = { 'file', 'omni', 'user', 'c-n' },
 }
 
 if vim.g.chaincomplete and type(vim.g.chaincomplete) == 'table' then
