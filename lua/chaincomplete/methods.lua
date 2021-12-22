@@ -28,6 +28,10 @@ local function try_dict() -- {{{1
   return vim.o.dictionary ~= '' and wordchar_before()
 end
 
+local function try_spell() -- {{{1
+  return vim.o.spell and wordchar_before()
+end
+
 -- }}}
 
 return {
@@ -79,7 +83,7 @@ return {
     keys = '\\<C-x>\\<C-]>',
   },
   ['spel'] = {
-    can_try = wordchar_before,
+    can_try = try_spell,
     keys = '\\<C-x>s',
   },
   ['vim'] = {
