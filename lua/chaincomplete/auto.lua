@@ -6,7 +6,7 @@ local timer
 local pumvisible = vim.fn.pumvisible
 local wrap = vim.schedule_wrap
 local can_autocomplete = require'chaincomplete.util'.can_autocomplete
-local open_popup = util.keys('<Plug>(ChainComplete)')
+local open_popup = util.keys('<Plug>(AutoComplete)')
 --}}}
 
 -------------------------------------------------------------------------------
@@ -14,27 +14,63 @@ local open_popup = util.keys('<Plug>(ChainComplete)')
 -------------------------------------------------------------------------------
 local auto = {}
 
-function auto.enable()
-  if settings.autocomplete then
-    return
+local function echo(verbose) -- Print current settings {{{1
+  if verbose then
+    print(string.format('autocomplete = %s', vim.inspect(settings.autocomplete)))
   end
-  settings.autocomplete = true
+end -- }}}
+
+function auto.set(toggle, args, verbose)
+  if toggle then -- if toggle {{{1
+    settings.autocomplete.enabled = not settings.autocomplete.enabled
+    if not settings.autocomplete.enabled then
+      return auto.disable(verbose)
+    end
+
+  elseif args == 'on' then -- elseif on {{{1
+    settings.autocomplete.enabled = true
+
+  elseif args == 'off' then -- elseif off {{{1
+    return auto.disable(verbose)
+
+  elseif args == 'reset' then -- elseif reset {{{1
+    settings.autocomplete.prefix = 3
+    settings.autocomplete.triggers = { '%w%.', '->' }
+    if not settings.autocomplete.enabled then
+      return auto.disable(verbose)
+    end
+
+  elseif args ~= '' then -- elseif args {{{1
+    settings.autocomplete.enabled = true
+    settings.autocomplete.prefix = tonumber(args:match('%d+')) or false
+    settings.autocomplete.triggers = {}
+    for chars in args:gmatch('%D+') do
+      table.insert(settings.autocomplete.triggers, chars)
+    end
+  else -- else print current settings {{{1
+    return echo(true)
+  end -- }}}
+  echo(verbose)
   vim.opt.completeopt:append('noselect')
+  settings.noselect = true
   vim.cmd( -- enable autocommands {{{1
     [[
-  augroup chaincomplete_auto
+    augroup chaincomplete_auto
     au!
+    autocmd InsertCharPre * noautocmd call v:lua.chaincomplete.auto.check()
     autocmd CursorMovedI * noautocmd call v:lua.chaincomplete.auto.start()
     autocmd InsertLeave  * noautocmd call v:lua.chaincomplete.auto.stop()
-  augroup END
-  ]]) -- }}}
+    augroup END
+    ]]) -- }}}
 end
 
-function auto.disable()
-  if not settings.autocomplete then
+function auto.disable(verbose)
+  echo(verbose)
+  if not settings.autocomplete.enabled then
     return
   end
-  settings.autocomplete = false
+  settings.autocomplete.enabled = false
+  settings.noselect = false
   vim.opt.completeopt:remove('noselect')
   vim.cmd( -- disable autocommands {{{1
     [[
@@ -43,14 +79,12 @@ function auto.disable()
   ]]) -- }}}
 end
 
-function auto.toggle()
-  if settings.autocomplete then
-    auto.disable()
-  else
-    auto.enable()
+function auto.check()
+  if not settings.noselect then
+    vim.opt.completeopt:append('noselect')
+    settings.noselect = true
   end
 end
-
 
 -------------------------------------------------------------------------------
 -- Autocompletion timer

@@ -23,8 +23,27 @@ end
 --- If characters before cursor can trigger autocompletion, when enabled.
 --- @return boolean
 function util.can_autocomplete()
-  local c = prefix(3)
-  return c:match("^[%w_]+$") or c:match("%.$") or c:match("->$")
+  local ac = settings.autocomplete
+  local c
+  local coln = col('.')
+  local len = coln == 3 and 2 or 3
+  if coln > 2 then
+    if next(ac.triggers) then
+      c = prefix(len)
+      for _, t in ipairs(ac.triggers) do
+        if c:match(t .. '$') then
+          return true
+        end
+      end
+    end
+  end
+  if ac.prefix then
+    if not c or ac.prefix ~= len then
+      c = prefix(ac.prefix)
+    end
+    return c:match("^[%w_]+$")
+  end
+  return false
 end
 
 --- If character before cursor is a 'word' character.

@@ -2,6 +2,7 @@ local bufnr = vim.fn.bufnr
 local pumvisible = vim.fn.pumvisible
 local util = require'chaincomplete.util'
 local methods = require'chaincomplete.methods'
+local settings = require'chaincomplete.settings'
 
 local cp = util.keys('<C-p>')
 local cn = util.keys('<C-n>')
@@ -52,6 +53,14 @@ local function get_chain(bnr)
   return M.buffers[bnr]
 end
 
+--- Ensure the first item is selected during manual completion.
+--- @param manual boolean
+local function ensure_select(manual)
+  if manual and settings.noselect then
+    settings.noselect = false
+    vim.opt.completeopt:remove('noselect')
+  end
+end
 
 
 -------------------------------------------------------------------------------
@@ -70,10 +79,12 @@ end
 --- async ruotine has terminated. That is, it is the async routine's
 --- responsibility to restart the verification chain, if there are no completion
 --- items.
---- @param advancing boolean
+--- @param advancing boolean: invoked when advancing chain
+--- @param manual boolean: invoked by manual completion
 --- @return string: keys sequence
 ---
-function M.complete(advancing)
+function M.complete(advancing, manual)
+  ensure_select(manual)
   chain = get_chain()
   if pumvisible() == 1 then
     return methods[chain[index]].invert and cp or cn
@@ -176,7 +187,7 @@ end
 --- @return table: validated chain
 local function verify_chain(s)
   local newchain = {}
-  for v in s:gmatch('[a-z-]+') do
+  for v in s:gmatch('%S+') do
     if methods[v] then
       table.insert(newchain, v)
     end
@@ -187,7 +198,7 @@ end
 --- Get chain from command line input().
 --- @return table: the validated chain, or nil
 local function chain_from_input()
-  local oldchain = table.concat(get_chain(), ', ')
+  local oldchain = table.concat(get_chain(), ' ')
   local input = vim.fn.input('Enter a new chain: ', oldchain)
   if input == '' then
     return nil
@@ -195,11 +206,15 @@ local function chain_from_input()
   return verify_chain(input)
 end
 
-function M.set(bang, args)
+--- Set/reset/show the chain for current buffer.
+--- @param bang boolean: get chain from input
+--- @param args string: methods, separated by space
+--- @param echo boolean: print current chain to command line
+function M.set(bang, args, echo)
   local newchain
   if args == 'reset' then
     newchain = util.default_chain()
-  elseif bang == 1 then
+  elseif bang then
     newchain = chain_from_input()
   elseif args ~= '' then
     newchain = verify_chain(args)
@@ -207,8 +222,10 @@ function M.set(bang, args)
   if newchain then
     M.buffers[bufnr()] = newchain
   end
-  vim.cmd('redraw')
-  print('current chain: ' .. table.concat(get_chain(), ', '))
+  if echo then
+    vim.cmd('redraw')
+    print('current chain: ' .. table.concat(get_chain(), ', '))
+  end
 end
 
 return M
