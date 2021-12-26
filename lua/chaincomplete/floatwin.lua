@@ -52,7 +52,7 @@ end
 --- @param lines table
 --- @return number
 local function get_popup_width(lines)
-  local w, max = 0, 60
+  local w, max = 0, 80
   for _, l in ipairs(lines) do
     local lw = strwidth(l)
     if lw > max then

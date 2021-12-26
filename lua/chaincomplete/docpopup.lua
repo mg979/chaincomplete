@@ -3,6 +3,8 @@ local api = require'chaincomplete.api'
 local win = require'chaincomplete.floatwin'
 local settings = require'chaincomplete.settings'
 local bufnr = vim.fn.bufnr
+local extend = vim.list_extend
+local split = vim.split
 
 local M = {}
 
@@ -36,7 +38,11 @@ function M.open(item)
     vim.lsp.buf_request(bufnr(), 'textDocument/hover', params, prepare_popup)
   elseif item.info and item.info:match('%w') then
     return vim.defer_fn(function()
-      prepare_popup(nil, { contents = { value = item.info } })
+      -- from https://github.com/echasnovski/mini.nvim
+      local lines = { '<text>' }
+      extend(lines, split(item.info, '\n', false))
+      table.insert(lines, '</text>')
+      prepare_popup(nil, { contents = { value = lines } })
     end, 20)
   else
     return win.close()

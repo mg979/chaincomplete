@@ -24,9 +24,9 @@ endfun
 fun! chaincomplete#chain(bang, args)
     lua chaincomplete = require'chaincomplete'
     if a:bang
-        exe 'lua chaincomplete.set(true, "' . a:args . '", true)'
+        exe 'lua chaincomplete.set_chain("' . a:args . '", true, true)'
     else
-        exe 'lua chaincomplete.set(false, "' . a:args . '", true)'
+        exe 'lua chaincomplete.set_chain("' . a:args . '", false, true)'
     endif
 endfun
 

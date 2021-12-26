@@ -41,6 +41,10 @@ M.docpopup = require'chaincomplete.docpopup'
 local chain     -- current chain
 local index = 1 -- current position in the chain
 
+-------------------------------------------------------------------------------
+-- Local functions
+-------------------------------------------------------------------------------
+
 --- Get active chain for current buffer, or default chain.
 --- @param bnr number: buffer number
 --- @return table chain
@@ -62,6 +66,9 @@ local function ensure_select(manual)
   end
 end
 
+-------------------------------------------------------------------------------
+-- chaincomplete module functions
+-------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
 --- For each method in the active chain, its key sequence is added to the return
@@ -207,14 +214,14 @@ local function chain_from_input()
 end
 
 --- Set/reset/show the chain for current buffer.
---- @param bang boolean: get chain from input
 --- @param args string: methods, separated by space
+--- @param input boolean: get chain from input
 --- @param echo boolean: print current chain to command line
-function M.set(bang, args, echo)
+function M.set_chain(args, input, echo)
   local newchain
   if args == 'reset' then
     newchain = util.default_chain()
-  elseif bang then
+  elseif input then
     newchain = chain_from_input()
   elseif args ~= '' then
     newchain = verify_chain(args)
