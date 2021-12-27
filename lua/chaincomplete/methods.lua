@@ -49,6 +49,13 @@ return {
     async = true,
     timeout = 500,
   },
+  ['mini'] = {
+    can_try = try_lsp,
+    keys = util.keys('<C-x><C-o>'),
+    async = true,
+    timeout = 500,
+    handler = require'chaincomplete.mini'.auto_completion,
+  },
   ['user'] = {
     can_try = try_user,
     keys = '\\<C-x>\\<C-u>',

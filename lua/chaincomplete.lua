@@ -37,6 +37,9 @@ M.buffers = {}
 M.auto = require'chaincomplete.auto'
 M.async = require'chaincomplete.async'
 M.docpopup = require'chaincomplete.docpopup'
+M.mini = require'chaincomplete.mini'
+
+M.mini.setup()
 
 local chain     -- current chain
 local index = 1 -- current position in the chain

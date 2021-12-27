@@ -32,7 +32,7 @@ function M.open(item)
   end
   if lsp.has_hover() and lsp.is_lsp_item(item.user_data) then
     local params = {
-      textDocument = api.make_params(),
+      textDocument = api.make_text_document_params(),
       position = lsp.get_position(item),
     }
     vim.lsp.buf_request(bufnr(), 'textDocument/hover', params, prepare_popup)
