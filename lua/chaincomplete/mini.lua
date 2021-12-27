@@ -56,9 +56,6 @@ mini.config = {
 
   -- Way of how module does LSP completion
   lsp_completion = {
-    -- `source_func` should be one of 'completefunc' or 'omnifunc'.
-    source_func = 'omnifunc',
-
     -- `auto_setup` should be boolean indicating if LSP completion is set up on
     -- every `BufEnter` event.
     auto_setup = true,
@@ -114,12 +111,11 @@ function mini.auto_completion(async)
   -- Stop everything if inserted character is not appropriate
   local char_is_trigger = H.is_lsp_trigger(vim.v.char, 'completion')
   if not (H.is_char_keyword(vim.v.char) or char_is_trigger) then
-    H.stop_completion(false)
+    H.stop_completion()
     return
   end
 
-  -- If character is purely lsp trigger, make new LSP request without fallback
-  -- and force new completion
+  -- If character is purely lsp trigger, request new completion
   if char_is_trigger then
     H.cancel_lsp()
   end
@@ -225,8 +221,7 @@ end
 
 --- Module's |complete-function|
 ---
---- This is the main function which enables two-stage completion. It should be
---- set as one of |completefunc| or |omnifunc|.
+--- This is the main function which replaces omnifunc.
 ---
 --- No need to use it directly, everything is setup in |mini.setup|.
 function mini.completefunc_lsp(findstart, base)
@@ -301,14 +296,9 @@ function mini.completefunc_lsp(findstart, base)
 
     H.completion.lsp.status = 'done'
 
-    -- Maybe trigger fallback action
-    if vim.tbl_isempty(words) then
-      return
+    if not vim.tbl_isempty(words) then
+      return words
     end
-
-    -- Track from which source is current popup
-    H.completion.source = 'lsp'
-    return words
   end
 end
 
@@ -324,12 +314,8 @@ H.default_config = mini.config
 -- Track Insert mode changes
 H.text_changed_id = 0
 
--- Commonly used key sequences
-H.keys = {
-  completefunc = vim.api.nvim_replace_termcodes('<C-x><C-u>', true, false, true),
-  omnifunc = vim.api.nvim_replace_termcodes('<C-x><C-o>', true, false, true),
-  ctrl_n = vim.api.nvim_replace_termcodes('<C-g><C-g><C-n>', true, false, true),
-}
+-- Keys to trigger omnifunc
+H.cxco = vim.api.nvim_replace_termcodes('<C-x><C-o>', true, false, true)
 
 -- Caches for different actions -----------------------------------------------
 -- Field `lsp` is a table describing state of all used LSP requests. It has the
@@ -342,7 +328,6 @@ H.keys = {
 -- Cache for completion
 H.completion = {
   force = false,
-  source = nil,
   text_changed_id = 0,
   timer = vim.loop.new_timer(),
   lsp = { id = 0, status = nil, result = nil, cancel_fun = nil },
@@ -390,13 +375,6 @@ function H.setup_config(config)
     ['window_dimensions.signature.width'] = { config.window_dimensions.signature.width, 'number' },
 
     lsp_completion = { config.lsp_completion, 'table' },
-    ['lsp_completion.source_func'] = {
-      config.lsp_completion.source_func,
-      function(x)
-        return x == 'completefunc' or x == 'omnifunc'
-      end,
-      'one of strings: "completefunc" or "omnifunc"',
-    },
     ['lsp_completion.auto_setup'] = { config.lsp_completion.auto_setup, 'boolean' },
     ['lsp_completion.process_items'] = { config.lsp_completion.process_items, 'function' },
 
@@ -437,19 +415,15 @@ function H.trigger_lsp()
   -- When `force` is `true` then presence of popup shouldn't matter.
   local no_popup = H.completion.force or pumvisible() == 0
   if no_popup and H.is_insert_mode() then
-    local key = H.keys[mini.config.lsp_completion.source_func]
-    vim.api.nvim_feedkeys(key, 'n', false)
+    vim.api.nvim_feedkeys(H.cxco, 'n', false)
   end
 end
 
 -- Stop actions ---------------------------------------------------------------
-function H.stop_completion(keep_source)
+function H.stop_completion()
   H.completion.timer:stop()
   H.cancel_lsp({ H.completion })
   H.completion.force = false
-  if not keep_source then
-    H.completion.source = nil
-  end
 end
 
 function H.stop_info()
