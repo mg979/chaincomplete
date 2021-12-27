@@ -10,7 +10,9 @@ local pumvisible = vim.fn.pumvisible
 local async = {}
 
 function async.start(m, isLast)
-  async.items = nil -- clear previous items if any
+  -- clear previous items/handled state
+  async.items = nil
+  async.handled = false
   async.time = m.time or 50
   async.timeout = m.timeout or 300
   async.canAdvance = not isLast
@@ -33,7 +35,9 @@ function async.callback()
     return async.finish()
   end
 
-  if async.items then
+  if async.handled then
+    return async.finish()
+  elseif async.items then
     if #async.items == 0 then
       return async.finish()
     end
@@ -45,9 +49,13 @@ function async.callback()
 end
 
 function async.finish()
-  if pumvisible() == 0 and async.canAdvance then
-    api.feedkeys(resume, 'm', false)
-  end
+  -- Defer function for the case that popup isn't visible yet when the async
+  -- handler returns
+  vim.defer_fn(function()
+    if pumvisible() == 0 and async.canAdvance then
+      api.feedkeys(resume, 'm', false)
+    end
+  end, 50)
 end
 
 return async

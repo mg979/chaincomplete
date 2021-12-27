@@ -32,7 +32,7 @@ command! -bang -nargs=? ChainComplete call chaincomplete#chain(<bang>0, <q-args>
 inoremap <silent> <Plug>(AutoComplete)    <C-r>=v:lua.chaincomplete.complete()<CR>
 inoremap <silent> <Plug>(ChainComplete)   <C-r>=v:lua.chaincomplete.complete(v:false, v:true)<CR>
 inoremap <silent> <Plug>(ChainAdvance)    <C-r>=v:lua.chaincomplete.advance()<CR>
-inoremap <silent> <Plug>(ChainResume)     <C-r>=v:lua.chaincomplete.resume()<CR>
+inoremap <silent> <Plug>(ChainResume)     <C-g><C-g><C-r>=v:lua.chaincomplete.resume()<CR>
 
 if empty(maparg('<tab>', 'i')) && !hasmapto('<Plug>(ChainComplete)')
     imap <tab>  <Plug>(ChainComplete)
