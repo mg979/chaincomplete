@@ -1,162 +1,5 @@
 -- MIT License Copyright (c) 2021 Evgeni Chasnovski
 
--- Documentation ==============================================================
----@brief [[
---- Custom somewhat minimal autocompletion Lua plugin. Key design ideas:
---- - Have an async (with customizable 'debounce' delay) 'two-stage chain
----   completion': first try to get completion items from LSP client (if set
----   up) and if no result, fallback to custom action.
---- - Managing completion is done as much with Neovim's built-in tools as
----   possible.
----
---- Features:
---- - Two-stage chain completion:
----     - First stage is an LSP completion implemented via
----       |mini.completefunc_lsp()|. It should be set up as either
----       |completefunc| or |omnifunc|. It tries to get completion items from LSP client
----       (via 'textDocument/completion' request). Custom preprocessing of
----       response items is possible (with
----       `mini.config.lsp_completion.process_items`), for example
----       with fuzzy matching. By default items which are not snippets and
----       directly start with completed word are kept and sorted according to
----       LSP specification.
----     - If first stage is not set up or resulted into no candidates, fallback
----       action is executed. The most tested actions are Neovim's built-in
----       insert completion (see |ins-completion|).
---- - Automatic display in floating window of completion item info and signature
----   help (with highlighting of active parameter if LSP server provides such
----   information). After opening, window for signature help is fixed and is
----   closed when there is nothing to show, text is different or when leaving
----   Insert mode.
---- - Automatic actions are done after some configurable amount of delay. This
----   reduces computational load and allows fast typing (completion and
----   signature help) and item selection (item info)
---- - Autoactions are triggered on Neovim's built-in events.
----
---- What it doesn't do:
---- - Snippet expansion.
---- - Many configurable sources.
----
---- # Setup
----
---- This module needs a setup with `require('mini.completion').setup({})`
---- (replace `{}` with your `config` table). It will create global Lua table
---- `mini` which you can use for scripting or manually (with
---- `:lua mini.*`).
----
---- Default `config`:
---- <code>
----   {
----     -- Delay (debounce type, in ms) between certain Neovim event and action.
----     -- This can be used to (virtually) disable certain automatic actions by
----     -- setting very high delay time (like 10^7).
----     delay = {completion = 100, info = 100, signature = 50},
----
----     -- Maximum dimensions of floating windows for certain actions. Action entry
----     -- should be a table with 'height' and 'width' fields.
----     window_dimensions = {
----       info = {height = 25, width = 80},
----       signature = {height = 25, width = 80}
----     },
----
----     -- Way of how module does LSP completion:
----     -- - `source_func` should be one of 'completefunc' or 'omnifunc'.
----     -- - `auto_setup` should be boolean indicating if LSP completion is set up on
----     --   every `BufEnter` event.
----     -- - `process_items` should be a function which takes LSP
----     --   'textDocument/completion' response items and word to complete. Its
----     --   output should be a table of the same nature as input items. The most
----     --   common use-cases are custom filtering and sorting. You can use
----     --   default `process_items` as `mini.default_process_items()`.
----     lsp_completion = {
----       source_func = 'completefunc',
----       auto_setup = true,
----       process_items = --<function: filters 'not snippets' by prefix and sorts by LSP specification>,
----     },
----   }
---- </code>
---- # Notes
---- - More appropriate, albeit slightly advanced, LSP completion setup is to set
----   it not on every `BufEnter` event (default), but on every attach of LSP
----   client. To do that:
----     - Use in initial config: `lsp_completion = {source_func = 'omnifunc',
----       auto_setup = false}`.
----     - In `on_attach()` of every LSP client set 'omnifunc' option to exactly
----       `v:lua.mini.completefunc_lsp`.
----
---- # Comparisons
----
---- - 'nvim-cmp':
----     - More complex design which allows multiple sources each in form of
----       separate plugin. `mini` has two built in: LSP and fallback.
----     - Supports snippet expansion.
----     - Doesn't have customizable delays for basic actions.
----     - Doesn't allow fallback action.
----     - Doesn't provide signature help.
----
---- # Helpful key mappings
----
---- To use `<Tab>` and `<S-Tab>` for navigation through completion list, make
---- these key mappings:
---- <pre>
---- `vim.api.nvim_set_keymap('i', [[<Tab>]],   [[pumvisible() ? "\<C-n>" : "\<Tab>"]],   { noremap = true, expr = true })`
---- `vim.api.nvim_set_keymap('i', [[<S-Tab>]], [[pumvisible() ? "\<C-p>" : "\<S-Tab>"]], { noremap = true, expr = true })`
---- </pre>
----
---- # Highlight groups
----
---- 1. `MiniCompletionActiveParameter` - highlighting of signature active
---- parameter. Default: plain underline.
----
---- To change any highlight group, modify it directly with |:highlight|.
----
---- # Disabling
----
---- To disable, set `g:minicompletion_disable` (globally) or
---- `b:minicompletion_disable` (for a buffer) to `v:true`.
----@brief ]]
----@tag mini mini.completion
-
--- Overall implementation design:
--- - Completion:
---     - On `InsertCharPre` event try to start auto completion. If needed,
---       start timer which after delay will start completion process. Stop this
---       timer if it is not needed.
---     - When timer is activated, first execute LSP source (if set up and there
---       is an active LSP client) by calling built-in complete function
---       (`completefunc` or `omnifunc`) which tries LSP completion by
---       asynchronously sending LSP 'textDocument/completion' request to all
---       LSP clients. When all are done, execute callback which processes
---       results, stores them in LSP cache and reruns built-in complete
---       function which produces completion popup.
---     - If previous step didn't result into any completion, execute (in Insert
---       mode and if no popup) fallback action.
--- - Documentation:
---     - On `CompleteChanged` start auto info with similar to completion timer
---       pattern.
---     - If timer is activated, try these sources of item info:
---         - 'info' field of completion item (see `:h complete-items`).
---         - 'documentation' field of LSP's previously returned result.
---         - 'documentation' field in result of asynchronous
---           'completeItem/resolve' LSP request.
---     - If info doesn't consist only from whitespace, show floating window
---       with its content. Its dimensions and position are computed based on
---       current state of Neovim's data and content itself (which will be
---       displayed wrapped with `linebreak` option).
--- - Signature help (similar to item info):
---     - On `CursorMovedI` start auto signature (if there is any active LSP
---       client) with similar to completion timer pattern. Better event might
---       be `InsertCharPre` but there are issues with 'autopair-type' plugins.
---     - Check if character left to cursor is appropriate (')' or LSP's
---       signature help trigger characters). If not, do nothing.
---     - If timer is activated, send 'textDocument/signatureHelp' request to
---       all LSP clients. On callback, process their results. Window is opened
---       if not already with the same text (its characteristics are computed
---       similar to item info). For every LSP client it shows only active
---       signature (in case there are many). If LSP response has data about
---       active parameter, it is highlighted with
---       `MiniCompletionActiveParameter` highlight group.
-
 local settings = require'chaincomplete.settings'
 local win = require'chaincomplete.floatwin'
 local api = require'chaincomplete.api'
@@ -170,12 +13,8 @@ local H = {}
 --- Module setup
 ---
 ---@param config table: Module config table.
----@usage `require('mini.completion').setup({})` (replace `{}` with your `config` table)
 function mini.setup(config)
-  -- Setup config
   config = H.setup_config(config)
-
-  -- Apply config
   mini.config = config
 
   -- Set flags for current insert mode session already
@@ -781,27 +620,13 @@ function H.show_info_window()
     return H.close_action_window(H.info, true, H.info.lsp.status == 'sent')
   end
 
-  -- If not already, create a permanent buffer where info will be
-  -- displayed. For some reason, it is important to have it created not in
-  -- `setup()` because in that case there is a small flash (which is really a
-  -- brief open of window at screen top, focus on it, and its close) on the
-  -- first show of info window.
-  H.ensure_buffer(H.info, 'mini:completion-item-info')
-
-  -- Add `lines` to info buffer. Use `wrap_at` to have proper width of
-  -- 'non-UTF8' section separators.
-  vim.lsp.util.stylize_markdown(H.info.bufnr, lines, { wrap_at = mini.config.window_dimensions.info.width })
-
-  -- Compute floating window options
-  local opts = H.info_window_options()
-
   -- Defer execution because of textlock during `CompleteChanged` event
   vim.defer_fn(function()
     -- Ensure that window doesn't open when it shouldn't be
     if not (pumvisible() == 1 and H.is_insert_mode()) then
       return
     end
-    H.open_action_window(H.info, opts)
+    H.info.winnr = win.open_info(H.make_buf(H.info), lines, H.info.winnr)
   end, 0)
 end
 
@@ -955,8 +780,7 @@ function H.show_signature_window()
   table.insert(lines, 1, '```' .. vim.bo.filetype)
   table.insert(lines, '```')
 
-  -- If not already, create a permanent buffer for signature
-  H.ensure_buffer(H.signature, 'mini:signature-help')
+  H.signature.bufnr = H.make_buf(H.signature)
 
   -- Add `lines` to signature buffer. Use `wrap_at` to have proper width of
   -- 'non-UTF8' section separators.
@@ -992,12 +816,10 @@ function H.show_signature_window()
   -- Ensure window is closed
   H.close_action_window(H.signature)
 
-  -- Compute floating window options
-  local opts = H.signature_window_opts()
-
   -- Ensure that window doesn't open when it shouldn't
   if H.is_insert_mode() then
-    H.open_action_window(H.signature, opts)
+    H.signature.winnr = win.open_signature(
+      H.signature.bufnr, H.signature.winnr, H.signature_window_opts())
   end
 end
 
@@ -1119,16 +941,16 @@ function H.signature_window_opts()
   }
 end
 
--- Helpers for floating windows -----------------------------------------------
-function H.ensure_buffer(cache, name)
-  if cache.bufnr then
-    return
-  end
+-- Helpers for floating windows -------------------------------------------
 
-  cache.bufnr = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_name(cache.bufnr, name)
-  -- Make this buffer a scratch (can close without saving)
-  vim.fn.setbufvar(cache.bufnr, '&buftype', 'nofile')
+--- Create or reuse buffer for floating window.
+--- @param cache table: the kind of window
+--- @return number: buffer number
+function H.make_buf(cache)
+  if not cache.bufnr or not api.buf_is_valid(cache.bufnr) then
+    cache.bufnr = api.create_buf(false, true)
+  end
+  return cache.bufnr
 end
 
 ---@return number, number: height, width
@@ -1160,13 +982,6 @@ function H.floating_dimensions(lines, max_height, max_width)
   width = math.min(width, max_width)
 
   return height, width
-end
-
-function H.open_action_window(cache, opts)
-  cache.winnr = win.open(cache.bufnr, cache.winnr, opts)
-  vim.api.nvim_win_set_option(cache.winnr, 'wrap', true)
-  vim.api.nvim_win_set_option(cache.winnr, 'linebreak', true)
-  vim.api.nvim_win_set_option(cache.winnr, 'breakindent', false)
 end
 
 function H.close_action_window(cache, keep_timer, keep_win)
@@ -1261,8 +1076,8 @@ function H.table_get(t, id)
 end
 
 function H.get_left_char()
-  local line = vim.api.nvim_get_current_line()
-  local col = vim.api.nvim_win_get_cursor(0)[2]
+  local line = api.current_line()
+  local col = api.get_cursor(0)[2]
 
   return string.sub(line, col, col)
 end

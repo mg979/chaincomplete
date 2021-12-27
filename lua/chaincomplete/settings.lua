@@ -21,10 +21,13 @@ end
 if type(settings.border) == 'table' then
   settings._brow = string.len(settings.border[2])
   settings._bcol = string.len(settings.border[4])
-elseif settings.border == 'none' then
+elseif settings.border == 'sides' then
   settings.border = { '', '', '', ' ', '', '', '', ' ' }
   settings._brow = 1
   settings._bcol = 3
+elseif settings.border == 'none' then
+  settings._brow = 1
+  settings._bcol = 1
 else
   settings._brow = 3
   settings._bcol = 3
