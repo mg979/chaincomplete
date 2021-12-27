@@ -111,10 +111,6 @@ function mini.auto_completion(async)
 
   H.completion.timer:stop()
 
-  if vim.o.omnifunc ~= 'v:lua.chaincomplete.mini.completefunc_lsp' then
-    vim.o.omnifunc = 'v:lua.chaincomplete.mini.completefunc_lsp'
-  end
-
   -- Stop everything if inserted character is not appropriate
   local char_is_trigger = H.is_lsp_trigger(vim.v.char, 'completion')
   if not (H.is_char_keyword(vim.v.char) or char_is_trigger) then
@@ -496,10 +492,6 @@ function H.has_lsp_clients(capability)
     end
   end
   return false
-end
-
-function H.has_lsp_completion()
-  return vim.o.omnifunc == 'v:lua.mini.completefunc_lsp'
 end
 
 function H.is_lsp_trigger(char, type)

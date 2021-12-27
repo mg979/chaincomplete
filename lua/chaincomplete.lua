@@ -69,6 +69,16 @@ local function ensure_select(manual)
   end
 end
 
+--- Set method omnifunc/completefunc if necessary.
+--- @param method table
+local function check_funcs(method)
+  if method.omnifunc and vim.o.omnifunc ~= method.omnifunc then
+    vim.o.omnifunc = method.omnifunc
+  elseif method.completefunc and vim.o.completefunc ~= method.completefunc then
+    vim.o.completefunc = method.completefunc
+  end
+end
+
 -------------------------------------------------------------------------------
 -- chaincomplete module functions
 -------------------------------------------------------------------------------
@@ -106,6 +116,7 @@ function M.complete(advancing, manual)
   for i = index, #chain do
     local method = chain[i]
     local m = methods[method]
+    check_funcs(m)
     if m.can_try() then
       if m.async then
         return ret .. async_seq(i, method)
