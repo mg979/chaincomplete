@@ -661,48 +661,6 @@ function H.info_window_lines(info_id)
   return nil
 end
 
-function H.info_window_options()
-  -- Compute dimensions based on lines to be displayed
-  local lines = vim.api.nvim_buf_get_lines(H.info.bufnr, 0, -1, {})
-  local info_height, info_width = H.floating_dimensions(
-    lines,
-    mini.config.window_dimensions.info.height,
-    mini.config.window_dimensions.info.width
-  )
-
-  -- Compute position
-  local event = H.info.event
-  local left_to_pum = event.col - 1
-  local right_to_pum = event.col + event.width + (event.scrollbar and 1 or 0)
-
-  local space_left, space_right = left_to_pum, vim.o.columns - right_to_pum
-
-  local anchor, col, space
-  -- Decide side at which info window will be displayed
-  if info_width <= space_right or space_left <= space_right then
-    anchor, col, space = 'NW', right_to_pum, space_right
-  else
-    anchor, col, space = 'NE', left_to_pum, space_left
-  end
-
-  -- Possibly adjust floating window dimensions to fit screen
-  if space < info_width then
-    info_height, info_width = H.floating_dimensions(lines, mini.config.window_dimensions.info.height, space)
-  end
-
-  return {
-    relative = 'editor',
-    anchor = anchor,
-    row = event.row,
-    col = col,
-    width = info_width,
-    height = info_height,
-    focusable = false,
-    style = 'minimal',
-    border = settings.border,
-  }
-end
-
 -- Signature help -------------------------------------------------------------
 function H.show_signature_window()
   -- If there is no received LSP result, make request and exit
