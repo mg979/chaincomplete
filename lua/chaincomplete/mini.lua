@@ -3,6 +3,7 @@
 local settings = require'chaincomplete.settings'
 local win = require'chaincomplete.floatwin'
 local api = require'chaincomplete.api'
+local lsp = require'chaincomplete.lsp'
 local pumvisible = vim.fn.pumvisible
 local mode = vim.fn.mode
 
@@ -109,7 +110,7 @@ function mini.auto_completion(async)
   H.completion.timer:stop()
 
   -- Stop everything if inserted character is not appropriate
-  local char_is_trigger = H.is_lsp_trigger(vim.v.char, 'completion')
+  local char_is_trigger = lsp.is_completion_trigger(vim.v.char)
   if not (H.is_char_keyword(vim.v.char) or char_is_trigger) then
     H.stop_completion()
     return
@@ -178,9 +179,7 @@ function mini.auto_signature()
 
   H.signature.timer:stop()
 
-  local left_char = H.get_left_char()
-  local char_is_trigger = left_char == ')' or H.is_lsp_trigger(left_char, 'signature')
-  if not char_is_trigger then
+  if not lsp.is_signature_trigger(H.get_left_char()) then
     return
   end
 
@@ -462,22 +461,6 @@ function H.has_lsp_clients(capability)
 
   for _, c in pairs(clients) do
     if c.resolved_capabilities[capability] then
-      return true
-    end
-  end
-  return false
-end
-
-function H.is_lsp_trigger(char, type)
-  local triggers
-  local providers = {
-    completion = 'completionProvider',
-    signature = 'signatureHelpProvider',
-  }
-
-  for _, client in pairs(vim.lsp.buf_get_clients()) do
-    triggers = H.table_get(client, { 'server_capabilities', providers[type], 'triggerCharacters' })
-    if vim.tbl_contains(triggers or {}, char) then
       return true
     end
   end

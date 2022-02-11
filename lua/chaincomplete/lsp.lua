@@ -1,6 +1,8 @@
 local bufnr = vim.fn.bufnr
 local getline = vim.fn.getline
 local api = require'chaincomplete.api'
+local tbl_contains = vim.tbl_contains
+local get_clients = vim.lsp.buf_get_clients
 
 local lsp = {}
 
@@ -13,7 +15,7 @@ function lsp.get_buf_client()
   if client and not client.is_stopped() then
     return client
   end
-  for _, c in pairs(vim.lsp.buf_get_clients()) do
+  for _, c in pairs(get_clients()) do
     if not c.is_stopped() and c.resolved_capabilities.completion then
       lsp.clients[bufnr()] = c
       break
@@ -27,6 +29,39 @@ end
 --- @return boolean
 function lsp.is_lsp_item(ud)
   return ud and type(ud) == 'table' and ud.nvim and ud.nvim.lsp
+end
+
+--- If it's a valid lsp completion trigger character.
+--- @param char string
+--- @return boolean
+function lsp.is_completion_trigger(char)
+  local triggers
+  for _, client in pairs(get_clients()) do
+    triggers = ((client.server_capabilities or {}).completionProvider or {}).triggerCharacters
+    if triggers and tbl_contains(triggers, char) then
+      return true
+    end
+  end
+  return false
+end
+
+--- If it's a valid lsp signature trigger character.
+--- @param char string
+--- @return boolean
+function lsp.is_signature_trigger(char)
+  if char:match('[(),]') then
+    return true
+  elseif char:match('%w') then
+    return false
+  end
+  local triggers
+  for _, client in pairs(get_clients()) do
+    triggers = ((client.server_capabilities or {}).signatureHelpProvider or {}).triggerCharacters
+    if triggers and tbl_contains(triggers, char) then
+      return true
+    end
+  end
+  return false
 end
 
 --- If the currently attached client suppors hover documentation.
