@@ -45,6 +45,19 @@ function util.can_autocomplete()
   return false
 end
 
+--- If cursor is preceded by trigger characters.
+--- @return boolean
+function util.trigger_before()
+  local tt = intern.trigpats
+  local chars = prefix(3)
+  for _, t in ipairs(tt) do
+    if chars:match(t .. '$') then
+      return true
+    end
+  end
+  return false
+end
+
 --- If character before cursor is a 'word' character.
 --- @return boolean
 function util.wordchar_before()
@@ -56,18 +69,6 @@ end
 function util.filechar_before()
   local c = prefix(1)
   return c == sl or c:match("[%-%~%._%w]")
-end
-
---- If character before cursor is a dot.
---- @return boolean
-function util.dot_before()
-  return prefix(1) == '.'
-end
-
---- If characters before cursor are an arrow operator.
---- @return boolean
-function util.arrow_before()
-  return prefix(2) == '->'
 end
 
 --- Default chain for current buffer.

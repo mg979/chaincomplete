@@ -2,14 +2,11 @@ local util = require'chaincomplete.util'
 local lsp = require'chaincomplete.lsp'
 
 local wordchar_before = util.wordchar_before
+local trigger_before = util.trigger_before
 local filechar_before = util.filechar_before
-local dot_before      = util.dot_before
-local arrow_before    = util.arrow_before
 
 local function try_omni() -- {{{1
-  return vim.o.omnifunc ~= '' and (
-    wordchar_before() or dot_before() or arrow_before()
-    )
+  return vim.o.omnifunc ~= '' and (wordchar_before() or trigger_before())
 end
 
 local function try_lsp() -- {{{1
@@ -17,7 +14,7 @@ local function try_lsp() -- {{{1
   if not client or client.is_stopped() then
     return false
   end
-  return wordchar_before() or dot_before() or arrow_before()
+  return wordchar_before() or trigger_before()
 end
 
 local function try_user() -- {{{1

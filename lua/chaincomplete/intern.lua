@@ -24,15 +24,12 @@ local default_triggers = {
   ['asciidoc'] = {},
 }
 
-local default_trigpats = make_pats(default_triggers)
-
 M.noselect = false
 
 M.autocomplete = {
   enabled = false,
   prefix = 3,
   triggers = default_triggers,
-  trigpats = default_triggers,
 }
 
 M.border = {
@@ -55,7 +52,7 @@ function M.set_autocomplete_opts(ac)
     a.enabled = ac or false
     a.prefix = 3
     a.triggers = default_triggers
-    a.trigpats = default_trigpats
+    a.trigpats = make_pats(default_triggers)
   else
     a.enabled = ac.enabled or false
     a.prefix = ac.prefix
