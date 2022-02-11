@@ -964,7 +964,8 @@ end
 -- Simulate splitting single line `l` like how it would look inside window with
 -- `wrap` and `linebreak` set to `true`
 function H.wrap_line(l, width)
-  local breakat_pattern = '[' .. vim.o.breakat .. ']'
+  -- github.com/echasnovski/mini.nvim/commit/d8b52c436a2a7f530eba17dcb645ecada4a9d848
+  local breakat_pattern = '[- \t.,;:!?]'
   local res = {}
 
   local break_id, break_match, width_id
