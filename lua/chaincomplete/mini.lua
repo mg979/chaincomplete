@@ -4,6 +4,7 @@ local settings = require'chaincomplete.settings'
 local win = require'chaincomplete.floatwin'
 local api = require'chaincomplete.api'
 local lsp = require'chaincomplete.lsp'
+local util = require'chaincomplete.util'
 local pumvisible = vim.fn.pumvisible
 local mode = vim.fn.mode
 
@@ -179,7 +180,7 @@ function mini.auto_signature()
 
   H.signature.timer:stop()
 
-  if not lsp.is_signature_trigger(H.get_left_char()) then
+  if not lsp.is_signature_trigger(util.get_left_char()) then
     return
   end
 
@@ -981,13 +982,6 @@ function H.table_get(t, id)
     end
   end
   return res
-end
-
-function H.get_left_char()
-  local line = api.current_line()
-  local col = api.get_cursor(0)[2]
-
-  return string.sub(line, col, col)
 end
 
 return mini

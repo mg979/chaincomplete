@@ -85,6 +85,15 @@ function util.default_chain()
   return settings.chain_nolsp
 end
 
+--- Character to the left of the cursor.
+--- @return string
+function util.get_left_char()
+  local line = api.current_line()
+  local coln = api.get_cursor(0)[2]
+
+  return string.sub(line, coln, coln)
+end
+
 return util
 
 --- vim: ft=lua et ts=2 sw=2 fdm=expr
