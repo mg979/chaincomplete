@@ -180,7 +180,7 @@ function mini.auto_signature()
 
   H.signature.timer:stop()
 
-  if not lsp.is_signature_trigger(util.get_left_char()) then
+  if not util.get_left_char():match('[(,]') then
     return
   end
 

@@ -45,25 +45,6 @@ function lsp.is_completion_trigger(char)
   return false
 end
 
---- If it's a valid lsp signature trigger character.
---- @param char string
---- @return boolean
-function lsp.is_signature_trigger(char)
-  if char:match('[(),]') then
-    return true
-  elseif char:match('%w') then
-    return false
-  end
-  local triggers
-  for _, client in pairs(get_clients()) do
-    triggers = ((client.server_capabilities or {}).signatureHelpProvider or {}).triggerCharacters
-    if triggers and tbl_contains(triggers, char) then
-      return true
-    end
-  end
-  return false
-end
-
 --- If the currently attached client suppors hover documentation.
 --- @return boolean
 function lsp.has_hover()
