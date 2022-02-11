@@ -18,7 +18,7 @@ local default_triggers = {
   ['c'] =   { '.', '->' },
   ['lua'] = { '.', ':' },
   ['cpp'] = { '.', '->', '::' },
-  ['perl'] = { '.', '::' },
+  ['perl'] = { '.', '->', '::' },
   ['text'] = {},
   ['markdown'] = {},
   ['asciidoc'] = {},
@@ -50,7 +50,7 @@ function M.set_autocomplete_opts(ac)
   local a = M.autocomplete
   if type(ac) ~= 'table' then
     a.enabled = ac or false
-    a.prefix = 3
+    a.prefix = ac == 'triggers' and false or 3
     a.triggers = default_triggers
     a.trigpats = make_pats(default_triggers)
   else

@@ -4,6 +4,7 @@ CHAINCOMPLETE - TABLE OF CONTENTS                              *chaincomplete*
 ==============================================================================
 
   Features............................................|chaincomplete-features|
+  Quick start.........................................|chaincomplete-quick|
   Commands............................................|chaincomplete-commands|
   Plugs...............................................|chaincomplete-plugs|
   Chains and methods..................................|chaincomplete-methods|
@@ -39,6 +40,27 @@ Optional features:
 
 - autocompletion (as you type), default `disabled`
 - documentation popup, default `enabled`
+
+
+
+QUICK START                                              *chaincomplete-quick*
+==============================================================================
+
+Unless you have already mapped <Tab> and <C-j> in insert mode, you don't need
+any special setup.
+
+Note that autocompletion is disabled by default. To enable it:
+>
+  -- ex command: :AutoComplete on
+  vim.g.chaincomplete = { autocomplete = true }
+<
+while this will enable it for triggers only:
+>
+  -- ex command: :AutoComplete triggers
+  vim.g.chaincomplete = { autocomplete = 'triggers' }
+<
+If you want to integrate it with some snippets plugin, there are plugs
+available, that you can use with |nvim_feedkeys()|. See |chaincomplete-plugs|.
 
 
 
@@ -80,7 +102,7 @@ Examples:
   AutoComplete triggers
 
 means: enable autocompletions for currently defined triggers, without changing
-any setting.
+any setting. Keyword completion will be disabled.
 
 >
   AutoComplete 3 . ->
@@ -184,6 +206,12 @@ If `border` is set to 'sides', it will still have some padding at the sides,
 but not at the top of the window (unlike 'solid').
 
                                                   *chaincomplete-autocomplete*
+The `autocomplete` option can be:
+
+  `boolean`: if true, will be enabled for both keywords and default triggers
+  `string`: if it is 'triggers', then will only be enabled for triggers
+  `table`: see below
+
 The `autocomplete` option can be a table, for example: >
 
   vim.g.chaincomplete = {
@@ -206,14 +234,17 @@ If 'prefix' is `false`, then only triggers will be used.
 
 'triggers' should be `at most` 3 characters. So don't write longer triggers
 because they won't trigger autocompletion for performance reasons.
+Note: triggers specified by lsp clients are ignored. Only triggers defined
+here will be considered.
 
-You can also have filetype-specific triggers:
+You can also have filetype-specific triggers. These are the default values:
 >
   triggers = {
     ['*'] =   { '.' },      -- fallback
     ['lua'] = { '.', ':' },
     ['c'] =   { '.', '->' },
     ['cpp'] = { '.', '->', '::' },
+    ['perl'] = { '.', '->', '::' },
   }
 
 See also |:AutoComplete|.
@@ -228,7 +259,9 @@ CREDITS                                                *chaincomplete-credits*
 Bram Moolenar for Vim
 Neovim developers
 vim-mucomplete            https://github.com/lifepillar/vim-mucomplete
+Evgeni Chasnovski {1}     https://github.com/echasnovski/mini.nvim
 
+  {1} for the lsp implementation
 
 
 LICENSE                                                *chaincomplete-license*

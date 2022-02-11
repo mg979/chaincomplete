@@ -24,17 +24,6 @@ command! -bang -nargs=? AutoComplete  call chaincomplete#auto(<bang>0, <q-args>,
 command! -bang -nargs=? ChainComplete call chaincomplete#chain(<bang>0, <q-args>)
 
 
-" lua <<EOF
-" vim.g.chaincomplete = {
-"     autocomplete ={  
-"     triggers = {
-"         ['*'] =   { '.' },
-"         ['lua'] = { '.', ':' },
-"         ['c'] =   { '.', '->' },
-"         }
-"     }}
-" EOF
-
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Plugs and mappings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
