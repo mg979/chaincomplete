@@ -233,7 +233,9 @@ end
 --- @param echo boolean: print current chain to command line
 function M.set_chain(args, input, echo)
   local newchain
-  if args == 'reset' then
+  if args == 'settings' then
+    return print(vim.inspect(settings))
+  elseif args == 'reset' then
     newchain = util.default_chain()
   elseif input then
     newchain = chain_from_input()

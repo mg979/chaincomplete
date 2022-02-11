@@ -6,15 +6,15 @@ local settings = {
   signature = true,
   use_hover = true,
   resolve_documentation = false,
-  chain_lsp = { 'file', 'lsp', 'user', 'c-n' },
-  chain_nolsp = { 'file', 'omni', 'user', 'c-n' },
+  chain_lsp = { 'lsp', 'file', 'user', 'c-n' },
+  chain_nolsp = { 'omni', 'file', 'user', 'c-n' },
 }
 
 -- noselect flag, used by autocompletion
 settings.noselect = false
 
 if vim.g.chaincomplete and type(vim.g.chaincomplete) == 'table' then
-  vim.tbl_extend('force', settings, vim.g.chaincomplete)
+  settings = vim.tbl_deep_extend('force', settings, vim.g.chaincomplete)
 end
 
 -- default settings for popup border
