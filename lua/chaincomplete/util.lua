@@ -56,7 +56,7 @@ end
 --- @return boolean
 function util.filechar_before()
   local c = prefix(1)
-  return c == sl or c:match("%w") or c:match("%p")
+  return c == sl or c:match("[%-%~_%w]")
 end
 
 --- If character before cursor is a dot.
