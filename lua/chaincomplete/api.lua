@@ -26,12 +26,25 @@
 --- Proxies for nvim api.
 local api = {}
 
+--- Create autocommands to close floating window.
+--- @param events table
+--- @param winnr number
+local function close_preview_autocmd(events, winnr)
+  -- {{{1
+  if #events > 0 then
+    vim.cmd("autocmd " .. table.concat(events, ',')
+      .. " <buffer> ++once lua pcall(vim.api.nvim_win_close, "
+      .. winnr .. ", true)")
+  end
+end
+--}}}
+
 api.buf_get_lines             = vim.api.nvim_buf_get_lines
 api.buf_get_option            = vim.api.nvim_buf_get_option
 api.buf_is_valid              = vim.api.nvim_buf_is_valid
 api.buf_set_lines             = vim.api.nvim_buf_set_lines
 api.buf_set_option            = vim.api.nvim_buf_set_option
-api.close_on_events           = vim.lsp.util.close_preview_autocmd
+api.close_on_events           = close_preview_autocmd
 api.convert_to_markdown       = vim.lsp.util.convert_input_to_markdown_lines
 api.create_buf                = vim.api.nvim_create_buf
 api.current_line              = vim.api.nvim_get_current_line
