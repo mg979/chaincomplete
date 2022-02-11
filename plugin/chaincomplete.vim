@@ -24,6 +24,16 @@ command! -bang -nargs=? AutoComplete  call chaincomplete#auto(<bang>0, <q-args>,
 command! -bang -nargs=? ChainComplete call chaincomplete#chain(<bang>0, <q-args>)
 
 
+" lua <<EOF
+" vim.g.chaincomplete = {
+"     autocomplete ={  
+"     triggers = {
+"         ['*'] =   { '.' },
+"         ['lua'] = { '.', ':' },
+"         ['c'] =   { '.', '->' },
+"         }
+"     }}
+" EOF
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Plugs and mappings
@@ -52,7 +62,6 @@ endif
 set completeopt+=menuone
 
 au InsertEnter * ++once lua chaincomplete = require'chaincomplete'
-" au CompleteChanged * lua chaincomplete.docpopup.open(vim.v.event.completed_item)
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " vim: et sw=4 ts=4 sts=4 fdm=marker

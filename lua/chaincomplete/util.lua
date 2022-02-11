@@ -1,7 +1,8 @@
 local settings = require'chaincomplete.settings'
+local intern = require'chaincomplete.intern'
+local api = require'chaincomplete.api'
 local col = vim.fn.col
 local getline = vim.fn.getline
-local api = require'chaincomplete.api'
 local sl = vim.fn.has('win32') == 1 and '\\' or '/'
 
 local util = {}
@@ -24,25 +25,22 @@ end
 --- If characters before cursor can trigger autocompletion, when enabled.
 --- @return boolean
 function util.can_autocomplete()
-  local ac = settings.autocomplete
-  local c
+  local ac = intern.autocomplete
+  local tt = intern.trigpats
   local coln = col('.')
-  local len = coln == 3 and 2 or 3
-  if coln > 2 then
-    if next(ac.triggers) then
-      c = prefix(len)
-      for _, t in ipairs(ac.triggers) do
-        if c:match(t .. '$') then
-          return true
-        end
-      end
+  if coln < (ac.prefix or 3) then
+    return false
+  end
+  local chars = prefix(ac.prefix or 3)
+  if ac.prefix then
+    if chars:match("^[%w_]+$") then -- keyword characters
+      return true
     end
   end
-  if ac.prefix then
-    if not c or ac.prefix ~= len then
-      c = prefix(ac.prefix)
+  for _, t in ipairs(tt) do -- trigger characters
+    if chars:match(t .. '$') then
+      return true
     end
-    return c:match("^[%w_]+$")
   end
   return false
 end
@@ -57,7 +55,7 @@ end
 --- @return boolean
 function util.filechar_before()
   local c = prefix(1)
-  return c == sl or c:match("[%-%~_%w]")
+  return c == sl or c:match("[%-%~%._%w]")
 end
 
 --- If character before cursor is a dot.

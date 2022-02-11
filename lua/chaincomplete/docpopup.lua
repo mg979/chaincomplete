@@ -1,7 +1,7 @@
 local lsp = require'chaincomplete.lsp'
 local api = require'chaincomplete.api'
 local win = require'chaincomplete.floatwin'
-local settings = require'chaincomplete.settings'
+local intern = require'chaincomplete.intern'
 local bufnr = vim.fn.bufnr
 local extend = vim.list_extend
 local split = vim.split
@@ -25,7 +25,7 @@ end
 --- contained in item.info.
 --- @param item table: item that is being completed
 function M.open(item)
-  if not settings.docpopup then
+  if not intern.docinfo then
     return
   elseif not item.user_data and not item.info then
     return win.close()

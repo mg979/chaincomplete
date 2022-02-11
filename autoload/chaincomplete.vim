@@ -2,7 +2,7 @@
 " Function: chaincomplete#auto
 "
 " @param bang: toggle autocompletion
-" @param args: arguments for :ChainCompleteAuto
+" @param args: arguments for :AutoComplete
 " @param verbose: print current settings after command
 ""
 fun! chaincomplete#auto(bang, args, verbose)

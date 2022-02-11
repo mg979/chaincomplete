@@ -1,0 +1,240 @@
+*chaincomplete.txt* chaincomplete
+
+CHAINCOMPLETE - TABLE OF CONTENTS                              *chaincomplete*
+==============================================================================
+
+  Features............................................|chaincomplete-features|
+  Commands............................................|chaincomplete-commands|
+  Plugs...............................................|chaincomplete-plugs|
+  Chains and methods..................................|chaincomplete-methods|
+  Settings............................................|chaincomplete-settings|
+  Credits.............................................|chaincomplete-credits|
+  License.............................................|chaincomplete-license|
+
+
+
+This is a completion plugin that leverages on built-in |ins-completion|,
+similar to |vim-mucomplete| {1}.
+
+Each buffer can have its own completion chain, that is made of several
+completion methods that are tried one after the other, until one produces some
+results. Chain methods can also be skipped with a mapping.
+
+Autocompletion (completion as you type) is supported but it's not default.
+
+                               {1} https://github.com/lifepillar/vim-mucomplete
+
+
+
+FEATURES                                              *chaincomplete-features*
+==============================================================================
+
+Supported completion methods:
+
+- built-in completion methods (|ins-completion|)
+- |lsp| completion and custom async sources
+- custom non-async methods, with handlers based on |complete()|
+
+Optional features:
+
+- autocompletion (as you type), default `disabled`
+- documentation popup, default `enabled`
+
+
+
+COMMANDS                                              *chaincomplete-commands*
+==============================================================================
+
+                                                              *:Chaincomplete*
+  ChainComplete[!] {args}
+
+Examples: >
+  ChainComplete           print current chain
+  ChainComplete!          edit current chain (from input)
+  ChainComplete reset     reset chain to default
+  ChainComplete {chain}   set chain to a space-separated list of methods
+  ChainComplete settings  print all current settings
+<
+Read |chaincomplete-methods| to know how to define chains.
+
+                                                               *:AutoComplete*
+  {verbose} AutoComplete[!] {args}
+
+{verbose} will print current settings after running the command.
+
+{bang} will toggle current state, without changing other options.
+
+{args} can be:
+
+  `on`          enable autocompletion
+  `off`         disable autocompletion
+  `triggers`    enable for triggers only
+  `reset`       reset prefix and triggers (but keep enabled state)
+  `3 . ->`      space-separated arguments, with a number (needed characters to
+              trigger autocompletion) and/or trigger patterns
+
+The `.` argument translates into `%w%.` (dot preceded by |word| character).
+
+Examples:
+>
+  AutoComplete triggers
+
+means: enable autocompletions for currently defined triggers, without changing
+any setting.
+
+>
+  AutoComplete 3 . ->
+
+means: enable autocompletion, and trigger it if there's at least 3 |word|
+characters before the cursor, or a single dot preceded by a |word| character,
+or an arrow operator.
+>
+  AutoComplete .
+
+means: enable autocompletion, but trigger it only after a dot preceded by
+a |word| character.
+>
+  AutoComplete 2
+
+means: enable autocompletion, trigger it if there's at least 2 |word|
+characters before the cursor, don't use triggers.
+
+See also |chaincomplete-autocomplete|.
+
+
+
+
+PLUGS                                                    *chaincomplete-plugs*
+==============================================================================
+
+These plugs are available and mapped by default (if not mapped already, and if
+the key is not mapped):
+
+Plug                    Mapping ~
+-------------------------------------------------------------------------------
+<Plug>(ChainComplete)   <Tab>       start manual completion
+<Plug>(ChainAdvance)    <C-j>       advance to next method in the chain
+
+
+
+
+
+CHAINS AND METHODS                                      *chaincomplete-methods*
+==============================================================================
+
+Completion chains are buffer-local, therefore can be set in a |ftplugin|.
+Example:
+>
+  ChainComplete file lsp keyn
+
+would set the chain for the current buffer to attempt in sequence:
+
+  - file completion (as <C-X><C-F>)
+  - lsp completion (as <C-X><C-O>)
+  - words in current buffer (as <C-X><C-N>)
+
+Built-in methods:
+
+  `file`    |i_CTRL-X_CTRL-F|
+  `omni`    |i_CTRL-X_CTRL-O|
+  `lsp`     as above, but async
+  `user`    |i_CTRL-X_CTRL-U|
+  `dict`    |i_CTRL-X_CTRL-K|
+  `keyn`    |i_CTRL-X_CTRL-N|
+  `keyp`    |i_CTRL-X_CTRL-P|
+  `line`    |i_CTRL-X_CTRL-L|
+  `incl`    |i_CTRL-X_CTRL-I|
+  `defs`    |i_CTRL-X_CTRL-D|
+  `tags`    |i_CTRL-X_CTRL-]|
+  `spel`    |i_CTRL-X_s|
+  `vim`     |i_CTRL-X_CTRL-V|
+  `c-n`     |i_CTRL-N|
+  `c-p`     |i_CTRL-P|
+
+
+
+SETTINGS                                              *chaincomplete-settings*
+==============================================================================
+
+You don't need to change the settings or initialize the plugin if the default
+settings meet your needs. Otherwise set the *g:chaincomplete* variable to
+a dictionary.
+
+Default (lua):
+>
+  vim.g.chaincomplete = {
+    border = 'single',
+    autocomplete = false,
+    docinfo = true,
+    signature = true,
+    use_hover = true,
+    chain_lsp = { 'lsp', 'file', 'user', 'c-n' },
+    chain_nolsp = { 'omni', 'file', 'user', 'c-n' },
+  }
+<
+  `border`        see |nvim_open_win()| and search 'border', can be a table
+  `autocomplete`  enable autocompletion as you type, can be a table
+  `docinfo`       enable info popup (can be a table with filetypes)
+  `use_hover`     popup use `hover` documentation (can be a table with filetypes)
+  `signature`     enable signature help (can be a table with filetypes)
+  `chain_lsp`     default chain for when a |lsp| client is attached to the buffer
+  `chain_nolsp`   default chain for when no |lsp| client is available
+
+If `border` is set to 'sides', it will still have some padding at the sides,
+but not at the top of the window (unlike 'solid').
+
+                                                  *chaincomplete-autocomplete*
+The `autocomplete` option can be a table, for example: >
+
+  vim.g.chaincomplete = {
+    autocomplete = {
+      enabled = true,
+      prefix = 3,
+      triggers = { '.', '->' },
+    },
+  }
+
+This is also the default when the option is set to `true`.
+It means autocomplete is enabled, needs 3 |word| characters to trigger, and
+is additionally triggered by characters in 'triggers', if preceded by a |word|
+character. Default triggers are:
+
+  - dot `.`
+  - arrow operator `->`
+
+If 'prefix' is `false`, then only triggers will be used.
+
+'triggers' should be `at most` 3 characters. So don't write longer triggers
+because they won't trigger autocompletion for performance reasons.
+
+You can also have filetype-specific triggers:
+>
+  triggers = {
+    ['*'] =   { '.' },      -- fallback
+    ['lua'] = { '.', ':' },
+    ['c'] =   { '.', '->' },
+    ['cpp'] = { '.', '->', '::' },
+  }
+
+See also |:AutoComplete|.
+
+
+
+
+
+CREDITS                                                *chaincomplete-credits*
+==============================================================================
+
+Bram Moolenar for Vim
+Neovim developers
+vim-mucomplete            https://github.com/lifepillar/vim-mucomplete
+
+
+
+LICENSE                                                *chaincomplete-license*
+==============================================================================
+
+MIT license
+
+==============================================================================
+vim:tw=78:ts=2:sw=2:ft=help:norl:et:fen:fdl=0:

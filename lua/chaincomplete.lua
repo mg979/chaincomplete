@@ -2,6 +2,7 @@ local bufnr = vim.fn.bufnr
 local pumvisible = vim.fn.pumvisible
 local util = require'chaincomplete.util'
 local methods = require'chaincomplete.methods'
+local intern = require'chaincomplete.intern'
 local settings = require'chaincomplete.settings'
 
 local cp = util.keys('<C-p>')
@@ -36,7 +37,6 @@ M.buffers = {}
 -- autocompletion and async handlers
 M.auto = require'chaincomplete.auto'
 M.async = require'chaincomplete.async'
-M.docpopup = require'chaincomplete.docpopup'
 M.mini = require'chaincomplete.mini'
 
 M.mini.setup()
@@ -63,8 +63,8 @@ end
 --- Ensure the first item is selected during manual completion.
 --- @param manual boolean
 local function ensure_select(manual)
-  if manual and settings.noselect then
-    settings.noselect = false
+  if manual and intern.noselect then
+    intern.noselect = false
     vim.opt.completeopt:remove('noselect')
   end
 end

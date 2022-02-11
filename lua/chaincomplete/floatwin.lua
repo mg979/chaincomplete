@@ -1,5 +1,5 @@
 local api = require'chaincomplete.api'
-local settings = require'chaincomplete.settings'
+local intern = require'chaincomplete.intern'
 local strwidth = vim.str_utfindex
 
 local win = {}
@@ -10,7 +10,7 @@ local close_events = { "CompleteDone", "InsertLeave", "BufLeave" }
 --- @return table options
 local function floatopts()
   return {
-    border = settings.border,
+    border = intern.border.style,
     relative = 'editor',
     style = 'minimal',
   }
@@ -33,7 +33,7 @@ end
 --- @return number row, number column
 local function get_winpos(pum, lines, width, height)
   -- extra width/height for borders, if any
-  local BCOL, BROW = settings._bcol, settings._brow
+  local BCOL, BROW = intern.border.col, intern.border.row
   local all = vim.o.columns - BCOL + 1
   local row = pum.row
   local col = pum.col + pum.width + (pum.scrollbar and 1 or 0)

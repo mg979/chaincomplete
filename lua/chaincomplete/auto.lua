@@ -2,6 +2,7 @@
 local util = require'chaincomplete.util'
 local api = require'chaincomplete.api'
 local settings = require'chaincomplete.settings'
+local intern = require'chaincomplete.intern'
 local timer
 local pumvisible = vim.fn.pumvisible
 local wrap = vim.schedule_wrap
@@ -21,56 +22,73 @@ local function echo(verbose) -- Print current settings {{{1
 end -- }}}
 
 function auto.set(toggle, args, verbose)
+  local ac = vim.tbl_extend('keep', {}, intern.autocomplete) -- copy
+
   if toggle then -- if toggle {{{1
-    settings.autocomplete.enabled = not settings.autocomplete.enabled
-    if not settings.autocomplete.enabled then
-      return auto.disable(verbose)
+    ac.enabled = not ac.enabled
+    if not ac.enabled then
+      auto.disable(verbose)
     end
 
   elseif args == 'on' then -- elseif on {{{1
-    settings.autocomplete.enabled = true
+    ac.enabled = true
 
   elseif args == 'off' then -- elseif off {{{1
-    return auto.disable(verbose)
+    auto.disable(verbose)
+
+  elseif args == 'triggers' then -- elseif triggers {{{1
+    ac.enabled = true
+    ac.prefix = false
 
   elseif args == 'reset' then -- elseif reset {{{1
-    settings.autocomplete.prefix = 3
-    settings.autocomplete.triggers = { '%w%.', '->' }
-    if not settings.autocomplete.enabled then
-      return auto.disable(verbose)
+    -- keep the enabled state, but reset all the rest
+    ac.prefix = 3
+    ac.triggers = nil
+    if not ac.enabled then
+      auto.disable(verbose)
     end
 
   elseif args ~= '' then -- elseif args {{{1
-    settings.autocomplete.enabled = true
-    settings.autocomplete.prefix = tonumber(args:match('%d+')) or false
-    settings.autocomplete.triggers = {}
+    ac.enabled = true
+    ac.prefix = tonumber(args:match('%d+')) or false
+    ac.triggers = {}
     for chars in args:gmatch('%D+') do
-      table.insert(settings.autocomplete.triggers, chars)
+      table.insert(ac.triggers, chars)
     end
   else -- else print current settings {{{1
     return echo(true)
   end -- }}}
+
+  -- update settings
+  settings.autocomplete = intern.set_autocomplete_opts(ac)
+
+  if not ac.enabled then
+    return
+  end
+
   echo(verbose)
   vim.opt.completeopt:append('noselect')
-  settings.noselect = true
+  intern.noselect = true
   vim.cmd( -- enable autocommands {{{1
     [[
     augroup chaincomplete_auto
     au!
     autocmd InsertCharPre * noautocmd call v:lua.chaincomplete.auto.check()
-    autocmd CursorMovedI * noautocmd call v:lua.chaincomplete.auto.start()
+    autocmd TextChangedI * noautocmd call v:lua.chaincomplete.auto.start()
     autocmd InsertLeave  * noautocmd call v:lua.chaincomplete.auto.stop()
+    autocmd CompleteDonePre * noautocmd call v:lua.chaincomplete.auto.halt()
     augroup END
     ]]) -- }}}
 end
 
 function auto.disable(verbose)
   echo(verbose)
-  if not settings.autocomplete.enabled then
+  local ac = intern.autocomplete
+  if not ac.enabled then
     return
   end
-  settings.autocomplete.enabled = false
-  settings.noselect = false
+  ac.enabled = false
+  intern.noselect = false
   vim.opt.completeopt:remove('noselect')
   vim.cmd( -- disable autocommands {{{1
     [[
@@ -79,25 +97,30 @@ function auto.disable(verbose)
   ]]) -- }}}
 end
 
-function auto.check()
-  if not settings.noselect then
-    vim.opt.completeopt:append('noselect')
-    settings.noselect = true
-  end
-end
-
 -------------------------------------------------------------------------------
 -- Autocompletion timer
 -------------------------------------------------------------------------------
 
+--- Called on InsertCharPre, to ensure 'noselect' flag is enabled.
+--- Will also reset the 'halted' flag to resume autocompletion.
+function auto.check()
+  if not intern.noselect then
+    vim.opt.completeopt:append('noselect')
+    intern.noselect = true
+  end
+  auto.halted = false
+end
+
+--- Called on text changes in insert mode.
 function auto.start()
   auto.stop()
-  if pumvisible() == 0 then
+  if not auto.halted and pumvisible() == 0 then
     timer = vim.loop.new_timer()
     timer:start(100, 0, wrap(auto.complete))
   end
 end
 
+--- Stop timer if currently running.
 function auto.stop()
   if timer then
     timer:close()
@@ -105,11 +128,18 @@ function auto.stop()
   end
 end
 
+--- Callback of auto.start, to try autocompletion.
 function auto.complete()
   auto.stop()
   if pumvisible() == 0 and can_autocomplete() then
     api.feedkeys(open_popup, 'm', false)
   end
+end
+
+--- Called on CompleteDone, to prevent immediate retriggering
+function auto.halt()
+  auto.stop()
+  auto.halted = true
 end
 
 return auto

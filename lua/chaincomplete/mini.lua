@@ -1,6 +1,6 @@
 -- MIT License Copyright (c) 2021 Evgeni Chasnovski
 
-local settings = require'chaincomplete.settings'
+local intern = require'chaincomplete.intern'
 local win = require'chaincomplete.floatwin'
 local api = require'chaincomplete.api'
 local lsp = require'chaincomplete.lsp'
@@ -87,12 +87,19 @@ mini.config = {
 -- Module functionality =======================================================
 
 function mini.init()
-  local s, ft = settings, vim.o.filetype
+  local s, ft = intern, vim.o.filetype
   H.has_completion = H.has_lsp_clients('completion')
   H.resolve_doc = (s.resolve_documentation['*'] or s.resolve_documentation[ft])
-  H.use_info = (s.info['*'] or s.info[ft])
-  H.use_sighelp = (s.signature['*'] or s.signature[ft]) and H.has_lsp_clients('signature_help')
-  H.use_hover = (s.use_hover['*'] or s.use_hover[ft]) and H.has_lsp_clients('hover')
+  H.use_info = (s.docinfo[ft] or s.docinfo['*'])
+  H.use_sighelp = (s.signature[ft] or s.signature['*']) and H.has_lsp_clients('signature_help')
+  H.use_hover = (s.use_hover[ft] or s.use_hover['*']) and H.has_lsp_clients('hover')
+  if s.autocomplete.trigpats then
+    if s.autocomplete.trigpats[ft] then
+      s.trigpats = s.autocomplete.trigpats[ft]
+    else
+      s.trigpats = s.autocomplete.trigpats['*']
+    end
+  end
 end
 
 --- Auto completion
