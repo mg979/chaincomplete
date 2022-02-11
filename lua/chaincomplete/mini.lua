@@ -23,7 +23,7 @@ function mini.setup(config)
   mini.init()
 
   -- Setup module behavior
-  vim.api.nvim_exec(
+  vim.cmd(
     [[augroup mini
         au!
         au CompleteChanged * lua chaincomplete.mini.auto_info()
@@ -35,12 +35,11 @@ function mini.setup(config)
         au InsertEnter     * lua chaincomplete.mini.init()
 
         au FileType TelescopePrompt let b:minicompletion_disable=v:true
-      augroup END]],
-    false
+      augroup END]]
   )
 
   -- Create highlighting
-  vim.api.nvim_exec([[hi default MiniCompletionActiveParameter term=underline cterm=underline gui=underline]], false)
+  vim.cmd([[hi default MiniCompletionActiveParameter term=underline cterm=underline gui=underline]])
 end
 
 mini.config = {
@@ -241,7 +240,6 @@ function mini.completefunc_lsp(findstart, base)
     H.completion.lsp.id = current_id
     H.completion.lsp.status = 'sent'
 
-    local bufnr = vim.api.nvim_get_current_buf()
     local params = vim.lsp.util.make_position_params()
 
     -- NOTE: it is CRUCIAL to make LSP request on the first call to
@@ -257,7 +255,8 @@ function mini.completefunc_lsp(findstart, base)
     -- handle possible fallback and to have all completion suggestions be
     -- filtered with one `base` in the other route of this function. Anyway,
     -- the most common situation is with one attached LSP client.
-    local cancel_fun = vim.lsp.buf_request_all(bufnr, 'textDocument/completion', params, function(result)
+    local cancel_fun = vim.lsp.buf_request_all(
+      api.current_buf(), 'textDocument/completion', params, function(result)
       if not H.is_lsp_current(H.completion, current_id) then
         return
       end
@@ -315,7 +314,7 @@ H.default_config = mini.config
 H.text_changed_id = 0
 
 -- Keys to trigger omnifunc
-H.cxco = vim.api.nvim_replace_termcodes('<C-x><C-o>', true, false, true)
+H.cxco = api.replace_termcodes('<C-x><C-o>', true, false, true)
 
 -- Caches for different actions -----------------------------------------------
 -- Field `lsp` is a table describing state of all used LSP requests. It has the
@@ -415,7 +414,7 @@ function H.trigger_lsp()
   -- When `force` is `true` then presence of popup shouldn't matter.
   local no_popup = H.completion.force or pumvisible() == 0
   if no_popup and H.is_insert_mode() then
-    vim.api.nvim_feedkeys(H.cxco, 'n', false)
+    api.feedkeys(H.cxco, 'n', false)
   end
 end
 
@@ -602,7 +601,6 @@ function H.info_window_lines(info_id)
     return H.info_non_lsp_lines(item)
   end
 
-  local bufnr = vim.api.nvim_get_current_buf()
   local params, req
 
   if not H.use_hover then
@@ -623,7 +621,8 @@ function H.info_window_lines(info_id)
   H.info.lsp.id = current_id
   H.info.lsp.status = 'sent'
 
-  local cancel_fun = vim.lsp.buf_request_all(bufnr, req, params, function(result)
+  local cancel_fun = vim.lsp.buf_request_all(
+    api.current_buf(), req, params, function(result)
     -- Don't do anything if there is other LSP request in action
     if not H.is_lsp_current(H.info, current_id) then
       return
@@ -653,10 +652,10 @@ function H.show_signature_window()
     H.signature.lsp.id = current_id
     H.signature.lsp.status = 'sent'
 
-    local bufnr = vim.api.nvim_get_current_buf()
     local params = vim.lsp.util.make_position_params()
 
-    local cancel_fun = vim.lsp.buf_request_all(bufnr, 'textDocument/signatureHelp', params, function(result)
+    local cancel_fun = vim.lsp.buf_request_all(
+      api.current_buf(), 'textDocument/signatureHelp', params, function(result)
       if not H.is_lsp_current(H.signature, current_id) then
         return
       end
@@ -701,7 +700,7 @@ function H.show_signature_window()
   -- Add highlighting of active parameter
   for i, hl_range in ipairs(hl_ranges) do
     if not vim.tbl_isempty(hl_range) and hl_range.first and hl_range.last then
-      vim.api.nvim_buf_add_highlight(
+      api.buf_add_highlight(
         H.signature.bufnr,
         -1,
         'MiniCompletionActiveParameter',
@@ -809,7 +808,7 @@ function H.process_signature_response(response)
 end
 
 function H.signature_window_opts()
-  local lines = vim.api.nvim_buf_get_lines(H.signature.bufnr, 0, -1, {})
+  local lines = api.buf_get_lines(H.signature.bufnr, 0, -1, {})
   local height, width = H.floating_dimensions(
     lines,
     mini.config.window_dimensions.signature.height,
@@ -833,7 +832,7 @@ function H.signature_window_opts()
   end
 
   -- Get zero-indexed current cursor position
-  local bufpos = vim.api.nvim_win_get_cursor(0)
+  local bufpos = api.get_cursor(0)
   bufpos[1] = bufpos[1] - 1
 
   return {
@@ -924,9 +923,8 @@ end
 
 function H.get_completion_start()
   -- Compute start position of latest keyword (as in `vim.lsp.omnifunc`)
-  local pos = vim.api.nvim_win_get_cursor(0)
-  local line = vim.api.nvim_get_current_line()
-  local line_to_cursor = line:sub(1, pos[2])
+  local pos = api.get_cursor(0)
+  local line_to_cursor = api.current_line():sub(1, pos[2])
   return vim.fn.match(line_to_cursor, '\\k*$')
 end
 

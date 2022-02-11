@@ -1,6 +1,7 @@
 local settings = require'chaincomplete.settings'
 local col = vim.fn.col
 local getline = vim.fn.getline
+local api = require'chaincomplete.api'
 local sl = vim.fn.has('win32') == 1 and '\\' or '/'
 
 local util = {}
@@ -9,7 +10,7 @@ local util = {}
 --- @param keys string
 --- @return string
 function util.keys(keys)
-  return vim.api.nvim_replace_termcodes(keys, true, false, true)
+  return api.replace_termcodes(keys, true, false, true)
 end
 
 --- Get N characters before cursor.
