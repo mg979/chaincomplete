@@ -8,11 +8,8 @@
 fun! chaincomplete#auto(bang, args, verbose)
     lua chaincomplete = require'chaincomplete'
     let v = a:verbose == 'verbose' ? 'true' : 'false'
-    if a:bang
-        exe 'lua chaincomplete.auto.set(true, "' . a:args . '", ' . v .')'
-    else
-        exe 'lua chaincomplete.auto.set(false, "' . a:args . '", ' . v .')'
-    endif
+    let b = a:bang ? 'true' : 'false'
+    exe printf("lua chaincomplete.auto.set(%s, '%s', %s)", b, a:args, v)
 endfun
 
 ""
@@ -23,10 +20,7 @@ endfun
 ""
 fun! chaincomplete#chain(bang, args)
     lua chaincomplete = require'chaincomplete'
-    if a:bang
-        exe 'lua chaincomplete.set_chain("' . a:args . '", true, true)'
-    else
-        exe 'lua chaincomplete.set_chain("' . a:args . '", false, true)'
-    endif
+    let b = a:bang ? 'true' : 'false'
+    exe printf("lua chaincomplete.set_chain('%s', %s, true)", a:args, b)
 endfun
 

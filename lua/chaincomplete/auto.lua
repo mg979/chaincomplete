@@ -52,8 +52,11 @@ function auto.set(toggle, args, verbose)
     ac.enabled = true
     ac.prefix = tonumber(args:match('%d+')) or false
     ac.triggers = {}
-    for chars in args:gmatch('%D+') do
+    for chars in args:gmatch('%p+') do
       table.insert(ac.triggers, chars)
+    end
+    if #ac.triggers == 0 then
+      ac.triggers = nil
     end
   else -- else print current settings {{{1
     return echo(true)
