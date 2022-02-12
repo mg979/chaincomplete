@@ -7,6 +7,7 @@ local lsp = require'chaincomplete.lsp'
 local util = require'chaincomplete.util'
 local pumvisible = vim.fn.pumvisible
 local mode = vim.fn.mode
+local vmatch = vim.fn.match
 
 -- Module definition ==========================================================
 local mini = {}
@@ -917,7 +918,6 @@ function H.close_action_window(cache, keep_timer, keep_win)
 end
 
 -- Utilities ------------------------------------------------------------------
-local vmatch = vim.fn.match
 
 function H.is_char_keyword(char)
   -- Using Vim's `match()` and `keyword` enables respecting Cyrillic letters
@@ -932,7 +932,7 @@ function H.get_completion_start()
   -- Compute start position of latest keyword (as in `vim.lsp.omnifunc`)
   local pos = api.get_cursor(0)
   local line_to_cursor = api.current_line():sub(1, pos[2])
-  return vim.fn.match(line_to_cursor, '\\k*$')
+  return vmatch(line_to_cursor, '\\k*$')
 end
 
 function H.is_whitespace(s)
@@ -962,7 +962,7 @@ function H.wrap_line(l, width)
   while vim.fn.strdisplaywidth(l) > width do
     -- Simulate wrap by looking at breaking character from end of current break
     width_id = vim.str_byteindex(l, width)
-    break_match = vim.fn.match(l:sub(1, width_id):reverse(), breakat_pattern)
+    break_match = vmatch(l:sub(1, width_id):reverse(), breakat_pattern)
     -- If no breaking character found, wrap at whole width
     break_id = width_id - (break_match < 0 and 0 or break_match)
     table.insert(res, l:sub(1, break_id))
