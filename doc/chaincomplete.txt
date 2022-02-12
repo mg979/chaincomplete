@@ -208,8 +208,8 @@ but not at the top of the window (unlike 'solid').
                                                   *chaincomplete-autocomplete*
 The `autocomplete` option can be:
 
-  `boolean`: if true, will be enabled for both keywords and default triggers
-  `string`: if it is 'triggers', then will only be enabled for triggers
+  `boolean`: if true, will be enabled for both keywords and triggers
+  `string`: if it is 'triggers', then it will only be enabled for triggers
   `table`: see below
 
 The `autocomplete` option can be a table, for example: >
@@ -218,34 +218,65 @@ The `autocomplete` option can be a table, for example: >
     autocomplete = {
       enabled = true,
       prefix = 3,
-      triggers = { '.', '->' },
+      triggers = {
+        ['lua'] = { '.', ':' },
+      },
     },
   }
 
 This is also the default when the option is set to `true`.
 It means autocomplete is enabled, needs 3 |word| characters to trigger, and
 is additionally triggered by characters in 'triggers', if preceded by a |word|
-character. Default triggers are:
-
-  - dot `.`
-  - arrow operator `->`
+character.
 
 If 'prefix' is `false`, then only triggers will be used.
 
-'triggers' should be `at most` 3 characters. So don't write longer triggers
-because they won't trigger autocompletion for performance reasons.
-Note: triggers specified by lsp clients are ignored. Only triggers defined
-here will be considered.
+                                                      *chaincomplete-triggers*
+Triggers are characters that will invoke the completion popup during
+autocompletion, ignoring prefix length.
 
-You can also have filetype-specific triggers. These are the default values:
+The default triggers are:
 >
   triggers = {
-    ['*'] =   { '.' },      -- fallback
+    ['lua'] = { '.', ':' },
+  },
+<
+By default, lsp triggers are NOT used for autocompletion for these filetypes,
+but they are used for other filetypes. The default values reflect my personal
+preference, but you may have others. The reason is that some lsp clients
+define too many trigger characters, possibly disrupting signatures or
+completion, and I dislike that.
+
+There are several ways to use/define triggers:
+>
+  triggers = false
+<
+    No triggers will be used.
+>
+  triggers = true
+<
+    This will only use triggers provided by lsp clients, when they do.
+>
+  triggers = { '.', '->' }
+<
+    This will use the same triggers for all filetypes. Lsp triggers will be
+    ignored.
+>
+  triggers = {
+    ['*'] =   { '.' }, -- fallback, disables lsp triggers
     ['lua'] = { '.', ':' },
     ['c'] =   { '.', '->' },
     ['cpp'] = { '.', '->', '::' },
     ['perl'] = { '.', '->', '::' },
   }
+<
+    This will use the triggers defined for the filetype if present in the
+    table. As a fallback, either lsp triggers or the ones in `['*']` will be
+    used. If you want lsp triggers, don't use the `*` fallback, since it has
+    precedence.
+
+'triggers' should be `at most` 3 characters. So don't write longer triggers
+because they won't trigger autocompletion.
 
 See also |:AutoComplete|.
 

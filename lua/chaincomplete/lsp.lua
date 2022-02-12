@@ -8,6 +8,15 @@ local lsp = {}
 
 lsp.clients = {}
 
+function lsp.has_client_running()
+  for _, c in pairs(get_clients()) do
+    if not c.is_stopped() then
+      return true
+    end
+  end
+  return false
+end
+
 --- Get valid client attached to current buffer.
 --- @return table client
 function lsp.get_buf_client()

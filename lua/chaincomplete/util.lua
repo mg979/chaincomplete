@@ -1,8 +1,10 @@
 local settings = require'chaincomplete.settings'
 local intern = require'chaincomplete.intern'
 local api = require'chaincomplete.api'
+local lsp = require'chaincomplete.lsp'
 local col = vim.fn.col
 local getline = vim.fn.getline
+local vmatch = vim.fn.match
 local sl = vim.fn.has('win32') == 1 and '\\' or '/'
 
 local util = {}
@@ -23,6 +25,8 @@ local function prefix(length)
 end
 
 --- If characters before cursor can trigger autocompletion, when enabled.
+--- Here, lsp triggers will only be checked if there are no trigger patterns
+--- defined for the current filetype.
 --- @return boolean
 function util.can_autocomplete()
   local ac = intern.autocomplete
@@ -32,27 +36,40 @@ function util.can_autocomplete()
     return false
   end
   local chars = prefix(ac.prefix or 3)
-  if ac.prefix then
-    if chars:match("^[%w_]+$") then -- keyword characters
+  local last = chars:match('%S$')
+  if not last then
+    return false
+  elseif ac.prefix then
+    if vmatch(chars, '^\\k\\+$') ~= -1 then -- keyword characters
       return true
     end
   end
-  for _, t in ipairs(tt) do -- trigger characters
-    if chars:match(t .. '$') then
-      return true
+  if not tt and ac.triggers and lsp.has_client_running() then
+    return lsp.is_completion_trigger(last)
+  elseif tt then
+    for _, t in ipairs(tt) do -- trigger characters
+      if chars:match(t .. '$') then
+        return true
+      end
     end
   end
   return false
 end
 
 --- If cursor is preceded by trigger characters.
+--- This is not for autocompletion, rather for when attempting methods, so we
+--- always accept lsp triggers when available.
 --- @return boolean
 function util.trigger_before()
   local tt = intern.trigpats
   local chars = prefix(3)
-  for _, t in ipairs(tt) do
-    if chars:match(t .. '$') then
-      return true
+  if lsp.has_client_running() then
+    return lsp.is_completion_trigger(chars:match('%S$'))
+  elseif tt then
+    for _, t in ipairs(tt) do
+      if chars:match(t .. '$') then
+        return true
+      end
     end
   end
   return false

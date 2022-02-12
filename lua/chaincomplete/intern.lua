@@ -3,6 +3,9 @@ local M = {}
 -- translate triggers to patterns:
 -- keyword character followed by escaped trigger chars
 local function make_pats(triggers)
+  if type(triggers) ~= 'table' then
+    return nil
+  end
   local trigpats = {}
   for ft, trigs in pairs(triggers) do
     trigpats[ft] = {}
@@ -14,14 +17,7 @@ local function make_pats(triggers)
 end
 
 local default_triggers = {
-  ['*'] =   { '.' },
-  ['c'] =   { '.', '->' },
   ['lua'] = { '.', ':' },
-  ['cpp'] = { '.', '->', '::' },
-  ['perl'] = { '.', '->', '::' },
-  ['text'] = {},
-  ['markdown'] = {},
-  ['asciidoc'] = {},
 }
 
 M.noselect = false
@@ -38,7 +34,6 @@ M.border = {
   col = 3
 }
 
-M.trigpats = {} -- trigger patterns used by current buffer
 M.docinfo = {}
 M.signature = {}
 M.use_hover = {}
@@ -51,21 +46,18 @@ function M.set_autocomplete_opts(ac)
   if type(ac) ~= 'table' then
     a.enabled = ac or false
     a.prefix = ac == 'triggers' and false or 3
-    a.triggers = default_triggers
-    a.trigpats = make_pats(default_triggers)
   else
     a.enabled = ac.enabled or false
     a.prefix = ac.prefix
-    a.triggers = ac.triggers or vim.tbl_extend('keep', {}, default_triggers)
-    if a.triggers[1] then
-      -- list-like: all filetypes use the same
-      a.triggers = {['*'] = a.triggers}
-    elseif not a.triggers['*'] then
-      -- filetype-specific, but without default
-      a.triggers['*'] = default_triggers['*']
+    a.triggers = ac.triggers
+    if type(a.triggers) == 'table' then
+      if a.triggers[1] then
+        -- list-like: all filetypes use the same
+        a.triggers = {['*'] = a.triggers}
+      end
     end
-    a.trigpats = make_pats(a.triggers)
   end
+  a.trigpats = make_pats(a.triggers)
   return {
     enabled = a.enabled,
     prefix = a.prefix,

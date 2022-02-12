@@ -88,19 +88,13 @@ mini.config = {
 -- Module functionality =======================================================
 
 function mini.init()
-  local s, ft = intern, vim.o.filetype
+  local s, ft, ac = intern, vim.o.filetype, intern.autocomplete
   H.has_completion = H.has_lsp_clients('completion')
   H.resolve_doc = (s.resolve_documentation['*'] or s.resolve_documentation[ft])
   H.use_info = (s.docinfo[ft] or s.docinfo['*'])
   H.use_sighelp = (s.signature[ft] or s.signature['*']) and H.has_lsp_clients('signature_help')
   H.use_hover = (s.use_hover[ft] or s.use_hover['*']) and H.has_lsp_clients('hover')
-  if s.autocomplete.trigpats then
-    if s.autocomplete.trigpats[ft] then
-      s.trigpats = s.autocomplete.trigpats[ft]
-    else
-      s.trigpats = s.autocomplete.trigpats['*']
-    end
-  end
+  s.trigpats = ac.trigpats and (ac.trigpats[ft] or ac.trigpats['*'])
 end
 
 --- Auto completion
@@ -118,9 +112,13 @@ function mini.auto_completion(async)
   H.completion.timer:stop()
 
   -- Stop everything if inserted character is not appropriate
+  -- TODO: similar checks are run in util.can_autocomplete if in autocomplete
+  -- mode, but I can't just delete the checks here because they are still needed
+  -- for manual completion. Right now they're running two times in a row.
   local char_is_trigger = lsp.is_completion_trigger(vim.v.char)
   if not (H.is_char_keyword(vim.v.char) or char_is_trigger) then
     H.stop_completion()
+    async.handled = true
     return
   end
 
