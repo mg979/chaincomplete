@@ -190,6 +190,7 @@ Default (lua):
     docinfo = true,
     signature = true,
     use_hover = true,
+    replace_partial = false,
     chain_lsp = { 'lsp', 'file', 'user', 'c-n' },
     chain_nolsp = { 'omni', 'file', 'user', 'c-n' },
   }
@@ -201,6 +202,10 @@ Default (lua):
   `signature`     enable signature help (can be a table with filetypes)
   `chain_lsp`     default chain for when a |lsp| client is attached to the buffer
   `chain_nolsp`   default chain for when no |lsp| client is available
+
+`replace_partial` means that when completing in the middle of a word, the part
+of the word after the cursor is deleted. Sometimes it's desirable, sometimes
+it's not.
 
 If `border` is set to 'sides', it will still have some padding at the sides,
 but not at the top of the window (unlike 'solid').

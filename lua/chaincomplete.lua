@@ -1,9 +1,11 @@
-local bufnr = vim.fn.bufnr
-local pumvisible = vim.fn.pumvisible
+local fn = vim.fn
+local bufnr = fn.bufnr
+local pumvisible = fn.pumvisible
 local util = require'chaincomplete.util'
 local methods = require'chaincomplete.methods'
 local intern = require'chaincomplete.intern'
 local settings = require'chaincomplete.settings'
+local api = require'chaincomplete.api'
 
 local cp = util.keys('<C-p>')
 local cn = util.keys('<C-n>')
@@ -197,6 +199,20 @@ function M.async_complete(i, method)
   return cg .. ( methods[method].keys or '' )
 end
 
+function M.check_word(item)
+  if not settings.replace_partial or item.selected == -1 or vim.b.mc or vim.v.visual_multi then
+    return
+  else
+    local ln = api.current_line()
+    local pos = api.get_cursor(0)[2]
+    local c = ln:sub(pos):match('^[_%w]+')
+    if c then
+      vim.defer_fn(function()
+        fn.setline(fn.line('.'), ln:sub(1, pos) .. ln:sub(pos + c:len()))
+      end, 0)
+    end
+  end
+end
 
 
 -------------------------------------------------------------------------------

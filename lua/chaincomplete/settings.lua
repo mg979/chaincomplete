@@ -7,6 +7,7 @@ local settings = {
   signature = true,
   use_hover = true,
   resolve_documentation = false,
+  replace_partial = false,
   chain_lsp = { 'lsp', 'file', 'user', 'c-n' },
   chain_nolsp = { 'omni', 'file', 'user', 'c-n' },
 }
