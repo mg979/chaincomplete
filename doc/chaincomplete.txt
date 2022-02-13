@@ -9,6 +9,7 @@ CHAINCOMPLETE - TABLE OF CONTENTS                              *chaincomplete*
   Plugs...............................................|chaincomplete-plugs|
   Chains and methods..................................|chaincomplete-methods|
   Settings............................................|chaincomplete-settings|
+  Registering custom methods..........................|chaincomplete-custom|
   Credits.............................................|chaincomplete-credits|
   License.............................................|chaincomplete-license|
 
@@ -33,8 +34,8 @@ FEATURES                                              *chaincomplete-features*
 Supported completion methods:
 
 - built-in completion methods (|ins-completion|)
-- |lsp| completion and custom async sources
-- custom non-async methods, with handlers based on |complete()|
+- |lsp| completion
+- custom methods, with handlers based on |complete()|
 
 Optional features:
 
@@ -280,6 +281,106 @@ because they won't trigger autocompletion.
 
 See also |:AutoComplete|.
 
+
+
+
+
+REGISTERING CUSTOM METHODS                              *chaincomplete-custom*
+==============================================================================
+
+You can create and register new methods, so that you can use them in any
+chain. Methods can be async or not (blocking). For most purposes, blocking
+methods work better, and are far easier to implement.
+
+To register a new method, you must call the function:
+>
+  local chaincomplete = require'chaincomplete'
+  chaincomplete.register_method(name, method)
+<
+Where {name} is a string (the method name that can be used in a chain) and
+{method} is a table. {method} should include the following:
+
+  `can_try`: a function that returns `true` if the method should be attempted
+
+Then one of:
+
+  `items`:    can be either a list-like table with |complete-items|, or
+            a function returning them.
+  `handler`:  a function that generates items and calls |complete()|
+  `async`:    a function that generates items
+
+For the `can_try` field, you can use:
+>
+  local wordchar_before = require'chaincomplete.util'.wordchar_before
+
+Or make your own function.
+
+-------------------------------------------------------------------------------
+
+Methods using 'items' ~
+
+  These methods use an internal |complete()| handler, so that you can just
+  provide a list of |complete-items|.
+>
+    chaincomplete.register_method('months', {
+      can_try = wordchar_before,
+      items = { 'January', 'February', ... },
+    })
+<
+  This will register a method that can complete the months names.
+  If 'items' is a function, it will be called, and should return a list-like
+  table with completion items. So the previous example can be rewritten:
+>
+    chaincomplete.register_method('months', {
+      can_try = wordchar_before,
+      items = function() return { 'January', 'February', ... } end,
+    })
+<
+-------------------------------------------------------------------------------
+
+Methods using 'handler' ~
+
+  These methods use a custom handler, that is, a function that is supposed to
+  call |complete()| on its own. Inside `method.handler()` you should generate
+  the items, then call |complete()| on them.
+>
+    chaincomplete.register_method('months', {
+      can_try = wordchar_before,
+      handler = my_months_handler_function,
+    })
+<
+-------------------------------------------------------------------------------
+
+Methods using 'async' ~
+
+  Async methods are considerably more complex and don't have that many use
+  cases, as far as I can see. Anyway this is how you implement async sources:
+>
+    chaincomplete.register_method('months', {
+      can_try = wordchar_before,
+      async = my_async_months_handler_function,
+      timeout = 500,
+      cancel = cancel_my_async_handler,
+    })
+<
+  The handler function will be called with a table as argument. The only thing
+  you should do with this table, is to set the 'items' field, when you have
+  generated the items to complete.
+
+  If the items generation takes longer than 'timeout', `chaincomplete` will not
+  wait for a response and resume the chain. Items generation won't be stopped,
+  since it happens in your handler, so your handler function should handle the
+  timeout on its own. Alternatively, if you provide a 'cancel' function, it
+  will be called when the timeout expires.
+  Both 'timeout' and 'cancel' are optional (default timeout is 300).
+
+  Once 'items' have been set, the internal |complete()| handler will do the
+  rest. One example:
+>
+    local function my_async_months_handler_function(async)
+      -- this does nothing async, but you should get the point
+      async.items = { 'January', 'February', ... }
+    end
 
 
 

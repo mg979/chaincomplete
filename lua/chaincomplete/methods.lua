@@ -43,9 +43,8 @@ return {
   ['lsp'] = {
     can_try = try_lsp,
     keys = util.keys('<C-x><C-o>'),
-    async = true,
+    async = require'chaincomplete.mini'.auto_completion,
     timeout = 500,
-    handler = require'chaincomplete.mini'.auto_completion,
     omnifunc = 'v:lua.chaincomplete.mini.completefunc_lsp',
   },
   ['user'] = {

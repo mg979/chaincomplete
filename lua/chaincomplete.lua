@@ -4,6 +4,7 @@ local util = require'chaincomplete.util'
 local methods = require'chaincomplete.methods'
 local intern = require'chaincomplete.intern'
 local settings = require'chaincomplete.settings'
+local completeitems = require'chaincomplete.completeitems'.invoke
 
 local cp = util.keys('<C-p>')
 local cn = util.keys('<C-n>')
@@ -120,7 +121,7 @@ function M.complete(advancing, manual)
     if m.can_try() then
       if m.async then
         return ret .. async_seq(i, method)
-      elseif m.handler then
+      elseif m.items or m.handler then
         ret = ret .. handler_seq(i, method)
       else
         ret = ret .. verify_seq(i, m.keys)
@@ -171,22 +172,36 @@ end
 
 -------------------------------------------------------------------------------
 --- When a method has a special handler based on complete(), this function is
---- called and will on its turn call the method handler.
+--- called and will on its turn call the method handler. Possible variants:
+---
+--- 1. method has 'handler': m.handler() is called, and it must do everything
+---    by itself (make items, call complete())
+--- 2. method has 'items', and it's a list: internal handler calls complete()
+---    using that list
+--- 3. method has 'items', and it's a function: internal handler calls
+---    complete() with the result of items(), that must be a list
 ---
 --- Note: this kind of completion is not async. It is for the cases when
 --- complete() is used in a blocking manner.
 ---
+--- @param i number: position in the chain
 --- @param method string: the method name
 --- @return string: keys sequence or empty string
 ---
 function M.handler_complete(i, method)
   index = tonumber(i)
   local m = methods[method]
-  return cg .. ( m.handler() or m.keys or '' )
+  if m.handler then
+    m.handler()
+  else
+    completeitems(type(m.items) == 'function' and m.items() or m.items)
+  end
+  return m.keys and cg .. m.keys or ''
 end
 
 -------------------------------------------------------------------------------
 --- Called by async methods.
+--- @param i number: position in the chain
 --- @param method string: the method name
 --- @return string: keys sequence or empty string
 ---
@@ -249,6 +264,21 @@ function M.set_chain(args, input, echo)
     vim.cmd('redraw')
     print('current chain: ' .. table.concat(get_chain(), ', '))
   end
+end
+
+-------------------------------------------------------------------------------
+-- Registering new methods
+-------------------------------------------------------------------------------
+
+--- Register a new completion method, that can be used in a chain.
+--- @param name string
+--- @param m table
+function M.register_method(name, m)
+  if not m.can_try or (not m.items and not m.handler and not m.async) then
+    print('Failed to register completion method: ' .. name)
+    return
+  end
+  methods[name] = m
 end
 
 return M
