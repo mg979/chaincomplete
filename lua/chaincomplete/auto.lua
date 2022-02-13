@@ -76,6 +76,7 @@ function auto.set(toggle, args, verbose)
     [[
     augroup chaincomplete_auto
     au!
+    autocmd FileType TelescopePrompt lua vim.b.autocomplete_disabled = true
     autocmd InsertCharPre * noautocmd call v:lua.chaincomplete.auto.check()
     autocmd TextChangedI * noautocmd call v:lua.chaincomplete.auto.start()
     autocmd InsertLeave  * noautocmd call v:lua.chaincomplete.auto.stop()
@@ -117,7 +118,7 @@ end
 --- Called on text changes in insert mode.
 function auto.start()
   auto.stop()
-  if not auto.halted and pumvisible() == 0 then
+  if not auto.halted and not vim.b.autocomplete_disabled and pumvisible() == 0 then
     timer = vim.loop.new_timer()
     timer:start(100, 0, wrap(auto.complete))
   end
