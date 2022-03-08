@@ -31,6 +31,7 @@ function mini.setup(config)
         au CursorMovedI    * lua chaincomplete.mini.auto_signature()
         au InsertLeavePre  * lua chaincomplete.mini.stop()
         au CompleteDonePre * lua chaincomplete.mini.stop({'completion', 'info'})
+        au InsertCharPre   * lua chaincomplete.mini.on_char_pre()
         au TextChangedI    * lua chaincomplete.mini.on_text_changed_i()
         au TextChangedP    * lua chaincomplete.mini.on_text_changed_p()
         au InsertEnter     * lua chaincomplete.mini.init()
@@ -115,8 +116,8 @@ function mini.auto_completion(async)
   -- TODO: similar checks are run in util.can_autocomplete if in autocomplete
   -- mode, but I can't just delete the checks here because they are still needed
   -- for manual completion. Right now they're running two times in a row.
-  local char_is_trigger = lsp.is_completion_trigger(vim.v.char)
-  if not (H.is_char_keyword(vim.v.char) or char_is_trigger) then
+  local char_is_trigger = lsp.is_completion_trigger(H.char)
+  if not (H.is_char_keyword(H.char) or char_is_trigger) then
     H.stop_completion()
     async.handled = true
     return
@@ -222,6 +223,11 @@ end
 function mini.on_text_changed_p()
   -- Track Insert mode changes
   H.text_changed_id = H.text_changed_id + 1
+end
+
+--- Act on every |InsertCharPre|
+function mini.on_char_pre()
+  H.char = vim.v.char
 end
 
 --- Module's |complete-function|
