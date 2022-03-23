@@ -37,6 +37,7 @@ M.border = {
 M.docinfo = {}
 M.signature = {}
 M.use_hover = {}
+M.resolve_documentation = {}
 
 -------------------------------------------------------------------------------
 
@@ -89,16 +90,38 @@ end
 
 -------------------------------------------------------------------------------
 
--- Internal setting for various options.
+-- Set internal setting for various options.
 function M.set_opt(opt, value)
+  if not M[opt] then
+    print('[chaincomplete] invalid option:', opt)
+    return
+  end
   local O = M[opt]
   if type(value) == 'table' then -- using tables with filetypes
-    for _, ft in ipairs(value) do
-      O[ft] = true
+    if #value > 0 then    -- list-like
+      for _, ft in ipairs(value) do
+        O[ft] = true
+      end
+    else
+      for ft, v in pairs(value) do
+        O[ft] = v
+      end
     end
   else
     M[opt] = {['*'] = value or false}
   end
 end
+
+-------------------------------------------------------------------------------
+
+--- Get internal setting for filetype.
+---@param opt string option name
+---@param ft string filetype
+---@return any: option value
+function M.get_opt(opt, ft)
+    return M[opt][ft] or (M[opt]['*'] and M[opt][ft] ~= false)
+end
+
+-------------------------------------------------------------------------------
 
 return M

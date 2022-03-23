@@ -91,10 +91,10 @@ mini.config = {
 function mini.init()
   local s, ft, ac = intern, vim.o.filetype, intern.autocomplete
   H.has_completion = H.has_lsp_clients('completion')
-  H.resolve_doc = (s.resolve_documentation['*'] or s.resolve_documentation[ft])
-  H.use_info = (s.docinfo[ft] or s.docinfo['*'])
-  H.use_sighelp = (s.signature[ft] or s.signature['*']) and H.has_lsp_clients('signature_help')
-  H.use_hover = (s.use_hover[ft] or s.use_hover['*']) and H.has_lsp_clients('hover')
+  H.resolve_doc = s.get_opt('resolve_documentation', ft)
+  H.use_info = s.get_opt('docinfo', ft)
+  H.use_sighelp = H.has_lsp_clients('signature_help') and s.get_opt('signature', ft)
+  H.use_hover = H.has_lsp_clients('hover') and s.get_opt('use_hover', ft)
   s.trigpats = ac.trigpats and (ac.trigpats[ft] or ac.trigpats['*'])
 end
 

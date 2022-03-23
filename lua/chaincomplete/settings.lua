@@ -5,7 +5,7 @@ local settings = {
   autocomplete = false,
   docinfo = true,
   signature = true,
-  use_hover = true,
+  use_hover = { ['*'] = true, go = false },
   resolve_documentation = false,
   chain_lsp = { 'lsp', 'file', 'user', 'c-n' },
   chain_nolsp = { 'omni', 'file', 'user', 'c-n' },
