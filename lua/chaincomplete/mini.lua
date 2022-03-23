@@ -1,6 +1,7 @@
 -- MIT License Copyright (c) 2021 Evgeni Chasnovski
 
 local intern = require'chaincomplete.intern'
+local ut = require'chaincomplete.util'
 local win = require'chaincomplete.floatwin'
 local api = require'chaincomplete.api'
 local lsp = require'chaincomplete.lsp'
@@ -568,7 +569,7 @@ function H.show_info_window()
       if not doc then
         return H.close_action_window(H.info, true)
       end
-      return api.trim_empty(api.convert_to_markdown(doc))
+      return ut.sanitize_markdown(api.trim_empty(api.convert_to_markdown(doc)))
     end)
     H.info.lsp.status = 'done'
   else

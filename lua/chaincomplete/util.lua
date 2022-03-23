@@ -111,6 +111,18 @@ function util.get_left_char()
   return string.sub(line, coln, coln)
 end
 
+--- Remove noise from markdown lines.
+---@param lines table
+---@return table
+function util.sanitize_markdown(lines)
+  for n, _ in ipairs(lines) do
+    lines[n] = lines[n]:gsub('\\(.)', '%1') -- spurious backslashes
+    lines[n] = lines[n]:gsub('{{{%d', '') -- fold markers
+    lines[n] = lines[n]:gsub('%[(.-)%]%(.-%)', '%1') -- links
+  end
+  return lines
+end
+
 return util
 
 --- vim: ft=lua et ts=2 sw=2 fdm=expr
