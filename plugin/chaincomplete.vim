@@ -18,10 +18,10 @@ let g:loaded_chaincomplete = 1
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " autocompletion
-command! -bang -nargs=? AutoComplete  call chaincomplete#auto(<bang>0, <q-args>, <q-mods>)
+command! -bang -nargs=? -complete=customlist,chaincomplete#auto_c AutoComplete  call chaincomplete#auto(<bang>0, <q-args>, <q-mods>)
 
 " show/set/reset chain
-command! -bang -nargs=? ChainComplete call chaincomplete#chain(<bang>0, <q-args>)
+command! -bang -nargs=? -complete=customlist,chaincomplete#chain_c ChainComplete call chaincomplete#chain(<bang>0, <q-args>)
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

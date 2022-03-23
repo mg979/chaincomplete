@@ -13,6 +13,17 @@ fun! chaincomplete#auto(bang, args, verbose)
 endfun
 
 ""
+" Function: chaincomplete#auto_c
+" Command-line completion for :AutoComplete
+"
+" @param ...: command-line arguments
+" Returns: filtered completion
+""
+function! chaincomplete#auto_c(...) abort
+    return filter(['triggers', 'on', 'off', 'reset'], 'v:val =~ a:1')
+endfunction
+
+""
 " Function: chaincomplete#chain
 "
 " @param bang: enter chain from input
@@ -24,3 +35,13 @@ fun! chaincomplete#chain(bang, args)
     exe printf("lua chaincomplete.set_chain('%s', %s, true)", a:args, b)
 endfun
 
+""
+" Function: chaincomplete#chain_c
+" Command-line completion for :ChainComplete
+"
+" @param ...: command-line arguments
+" Returns: filtered completion
+""
+function! chaincomplete#chain_c(...) abort
+    return filter(['settings', 'reset'], 'v:val =~ a:1')
+endfunction
