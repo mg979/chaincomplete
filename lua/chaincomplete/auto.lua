@@ -26,15 +26,12 @@ function auto.set(toggle, args, verbose)
 
   if toggle then -- if toggle {{{1
     ac.enabled = not ac.enabled
-    if not ac.enabled then
-      auto.disable(verbose)
-    end
 
   elseif args == 'on' then -- elseif on {{{1
     ac.enabled = true
 
   elseif args == 'off' then -- elseif off {{{1
-    auto.disable(verbose)
+    ac.enabled = false
 
   elseif args == 'triggers' then -- elseif triggers {{{1
     ac.enabled = true
@@ -44,9 +41,6 @@ function auto.set(toggle, args, verbose)
     -- keep the enabled state, but reset all the rest
     ac.prefix = 3
     ac.triggers = nil
-    if not ac.enabled then
-      auto.disable(verbose)
-    end
 
   elseif args ~= '' then -- elseif args {{{1
     ac.enabled = true
@@ -64,41 +58,32 @@ function auto.set(toggle, args, verbose)
 
   -- update settings
   settings.autocomplete = intern.set_autocomplete_opts(ac)
+  echo(verbose)
 
-  if not ac.enabled then
-    return
+  if ac.enabled then
+		vim.opt.completeopt:append('noselect')
+		intern.noselect = true
+		vim.cmd( -- enable autocommands {{{1
+			[[
+			augroup chaincomplete_auto
+			au!
+			autocmd FileType TelescopePrompt lua vim.b.autocomplete_disabled = true
+			autocmd InsertCharPre * noautocmd call v:lua.chaincomplete.auto.check()
+			autocmd TextChangedI * noautocmd call v:lua.chaincomplete.auto.start()
+			autocmd InsertLeave  * noautocmd call v:lua.chaincomplete.auto.stop()
+			autocmd CompleteDonePre * noautocmd call v:lua.chaincomplete.auto.halt()
+			augroup END
+			]]) -- }}}
+	else
+		intern.noselect = false
+		vim.opt.completeopt:remove('noselect')
+		vim.cmd( -- disable autocommands {{{1
+			[[
+			silent! au! chaincomplete_auto
+			silent! aug! chaincomplete_auto
+			]]) -- }}}
   end
 
-  echo(verbose)
-  vim.opt.completeopt:append('noselect')
-  intern.noselect = true
-  vim.cmd( -- enable autocommands {{{1
-    [[
-    augroup chaincomplete_auto
-    au!
-    autocmd FileType TelescopePrompt lua vim.b.autocomplete_disabled = true
-    autocmd InsertCharPre * noautocmd call v:lua.chaincomplete.auto.check()
-    autocmd TextChangedI * noautocmd call v:lua.chaincomplete.auto.start()
-    autocmd InsertLeave  * noautocmd call v:lua.chaincomplete.auto.stop()
-    autocmd CompleteDonePre * noautocmd call v:lua.chaincomplete.auto.halt()
-    augroup END
-    ]]) -- }}}
-end
-
-function auto.disable(verbose)
-  echo(verbose)
-  local ac = intern.autocomplete
-  if not ac.enabled then
-    return
-  end
-  ac.enabled = false
-  intern.noselect = false
-  vim.opt.completeopt:remove('noselect')
-  vim.cmd( -- disable autocommands {{{1
-    [[
-    au! chaincomplete_auto
-    aug! chaincomplete_auto
-  ]]) -- }}}
 end
 
 -------------------------------------------------------------------------------

@@ -125,10 +125,10 @@ function mini.auto_completion(async)
   end
 
   -- If character is purely lsp trigger, request new completion
-  if char_is_trigger then
+  if char_is_trigger and intern.autocomplete.enabled then
     H.cancel_lsp()
   end
-  H.completion.force = char_is_trigger
+  H.completion.force = char_is_trigger and intern.autocomplete.enabled
 
   -- Cache id of Insert mode "text changed" event for a later tracking (reduces
   -- false positive delayed triggers). The intention is to trigger completion
