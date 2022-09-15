@@ -129,7 +129,10 @@ function M.complete(advancing, manual)
     end
   end
   if ret == '' then
-    return advancing and '' or tab
+    if not settings.autocomplete or not settings.autocomplete.enabled then
+      return advancing and '' or tab
+    end
+    return manual and tab or ''
   else
     return ret .. reset_if_not_pumvisible
   end
