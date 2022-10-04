@@ -29,6 +29,7 @@ function mini.setup(config)
     [[augroup mini
         au!
         au CompleteChanged * lua chaincomplete.mini.auto_info()
+        au InsertEnter     * lua chaincomplete.mini.auto_signature()
         au CursorMovedI    * lua chaincomplete.mini.auto_signature()
         au InsertLeavePre  * lua chaincomplete.mini.stop()
         au CompleteDonePre * lua chaincomplete.mini.stop({'completion', 'info'})
