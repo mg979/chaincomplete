@@ -9,6 +9,8 @@ local sl = vim.fn.has('win32') == 1 and '\\' or '/'
 
 local util = {}
 
+local capabilities = vim.fn.has('nvim-0.8.0') and 'server_capabilities' or 'resolved_capabilities'
+
 --- Translate vim keys notations in a terminal sequence.
 --- @param keys string
 --- @return string
@@ -95,7 +97,7 @@ function util.default_chain()
     return settings.chain_lsp
   end
   for _, client in pairs(vim.lsp.buf_get_clients()) do
-    if client.resolved_capabilities.completion then
+    if client[capabilities].completion then
       return settings.chain_lsp
     end
   end

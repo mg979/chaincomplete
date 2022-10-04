@@ -10,6 +10,8 @@ local pumvisible = vim.fn.pumvisible
 local mode = vim.fn.mode
 local vmatch = vim.fn.match
 
+local capabilities, completionProvider, hoverProvider, signatureHelpProvider = lsp.providers()
+
 -- Module definition ==========================================================
 local mini = {}
 local H = {}
@@ -92,11 +94,11 @@ mini.config = {
 
 function mini.init()
   local s, ft, ac = intern, vim.o.filetype, intern.autocomplete
-  H.has_completion = H.has_lsp_clients('completion')
+  H.has_completion = H.has_lsp_clients(completionProvider)
   H.resolve_doc = s.get_opt('resolve_documentation', ft)
   H.use_info = s.get_opt('docinfo', ft)
-  H.use_sighelp = H.has_lsp_clients('signature_help') and s.get_opt('signature', ft)
-  H.use_hover = H.has_lsp_clients('hover') and s.get_opt('use_hover', ft)
+  H.use_sighelp = H.has_lsp_clients(signatureHelpProvider) and s.get_opt('signature', ft)
+  H.use_hover = H.has_lsp_clients(hoverProvider) and s.get_opt('use_hover', ft)
   s.trigpats = ac.trigpats and (ac.trigpats[ft] or ac.trigpats['*'])
 end
 
@@ -461,7 +463,7 @@ H.stop_actions = {
 }
 
 -- LSP ------------------------------------------------------------------------
----@param capability string|nil: Capability to check (as in `resolved_capabilities` of `vim.lsp.buf_get_clients` output).
+---@param capability string|nil: Capability to check (as in `server_capabilities` of `vim.lsp.buf_get_clients` output).
 ---@return boolean: Whether there is at least one LSP client that has resolved `capability`.
 ---@private
 function H.has_lsp_clients(capability)
@@ -474,7 +476,7 @@ function H.has_lsp_clients(capability)
   end
 
   for _, c in pairs(clients) do
-    if c.resolved_capabilities[capability] then
+    if c[capabilities][capability] then
       return true
     end
   end

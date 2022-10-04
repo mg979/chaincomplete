@@ -4,9 +4,18 @@ local api = require'chaincomplete.api'
 local tbl_contains = vim.tbl_contains
 local get_clients = vim.lsp.buf_get_clients
 
-local lsp = {}
+local lsp = { clients = {} }
 
-lsp.clients = {}
+--- Fields to check for providers, based on nvim version.
+function lsp.providers()
+  if vim.fn.has('nvim-0.8.0') then
+    return 'server_capabilities', 'completionProvider', 'hoverProvider', 'signatureHelpProvider'
+  else
+    return 'resolved_capabilities', 'completion', 'hover', 'signature_help'
+  end
+end
+
+local capabilities, completionProvider, hoverProvider = lsp.providers()
 
 function lsp.has_client_running()
   for _, c in pairs(get_clients()) do
@@ -25,7 +34,7 @@ function lsp.get_buf_client()
     return client
   end
   for _, c in pairs(get_clients()) do
-    if not c.is_stopped() and c.resolved_capabilities.completion then
+    if not c.is_stopped() and c[capabilities][completionProvider] then
       lsp.clients[bufnr()] = c
       break
     end
@@ -58,7 +67,7 @@ end
 --- @return boolean
 function lsp.has_hover()
   local client = lsp.clients[bufnr()]
-  return client and client.resolved_capabilities.hover
+  return client and client[capabilities][hoverProvider]
 end
 
 --- Position table, as needed by vim.lsp.buf_request.
