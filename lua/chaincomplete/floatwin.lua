@@ -57,16 +57,16 @@ end
 --- @param lines table
 --- @return number
 local function get_popup_width(lines)
-  local w, max = 0, 80
+  local w, max, wrap = 0, 80, 0
   for _, l in ipairs(lines) do
     local lw = strwidth(l)
     if lw > max then
-      return max
+      wrap = wrap + 1
     elseif lw > w then
       w = lw
     end
   end
-  return w
+  return wrap > 0 and max or w, wrap
 end
 
 --- Make options for floating popup and for stylize_markdown.
@@ -74,9 +74,9 @@ end
 --- @param lines table: text content
 --- @return table, table: floating window options, style options
 local function info_options(pum, lines)
-  local fopts, sopts = floatopts(), styleopts()
-  fopts.width = get_popup_width(lines)
-  fopts.height = #lines
+  local fopts, sopts, wrapped = floatopts(), styleopts(), 0
+  fopts.width, wrapped = get_popup_width(lines)
+  fopts.height = #lines + wrapped
   fopts.row, fopts.col = get_winpos(pum, lines, fopts.width, fopts.height)
   sopts.max_width = fopts.width
   return fopts, sopts
