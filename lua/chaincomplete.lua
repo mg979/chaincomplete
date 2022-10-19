@@ -84,6 +84,23 @@ end
 -- chaincomplete module functions
 -------------------------------------------------------------------------------
 
+--- Initialize chain on InsertEnter. Make sure lsp omnifunc is replaced with our
+--- own. Check other omnifunc/completefunc values.
+function M.init()
+  chaincomplete = M
+  local replace_lsp = vim.o.omnifunc == 'v:lua.vim.lsp.omnifunc'
+  chain = get_chain()
+  for i = 1, #chain do
+    local method = chain[i]
+    if replace_lsp and method == 'omni' then
+      table.remove(chain, i)
+      table.insert(chain, i, 'lsp')
+      M.buffers[bufnr()] = chain
+    end
+    check_funcs(methods[method])
+  end
+end
+
 -------------------------------------------------------------------------------
 --- For each method in the active chain, its key sequence is added to the return
 --- value if its triggering condition is satisfied. In most cases the condition
@@ -106,7 +123,6 @@ end
 ---
 function M.complete(advancing, manual)
   ensure_select(manual)
-  chain = get_chain()
   if pumvisible() == 1 then
     return methods[chain[index]].invert and cp or cn
   end
@@ -117,7 +133,6 @@ function M.complete(advancing, manual)
   for i = index, #chain do
     local method = chain[i]
     local m = methods[method]
-    check_funcs(m)
     if m.can_try() then
       if m.async then
         return ret .. async_seq(i, method)
