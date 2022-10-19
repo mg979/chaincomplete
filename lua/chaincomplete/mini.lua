@@ -241,7 +241,7 @@ end
 --- No need to use it directly, everything is setup in |mini.setup|.
 function mini.completefunc_lsp(findstart, base)
   -- Early return
-  if not H.has_completion or H.completion.lsp.status == 'sent' then
+  if not H.has_completion then
     if findstart == 1 then
       return -3
     else
@@ -249,72 +249,34 @@ function mini.completefunc_lsp(findstart, base)
     end
   end
 
-  -- NOTE: having code for request inside this function enables its use
-  -- directly with `<C-x><...>`.
-  if H.completion.lsp.status ~= 'received' then
-    local current_id = H.completion.lsp.id + 1
-    H.completion.lsp.id = current_id
-    H.completion.lsp.status = 'sent'
+  if findstart == 1 then
+    return H.get_completion_start()
+  end
 
-    local params = vim.lsp.util.make_position_params()
+  local current_id = H.completion.lsp.id + 1
+  H.completion.lsp.id = current_id
 
-    -- NOTE: it is CRUCIAL to make LSP request on the first call to
-    -- 'complete-function' (as in Vim's help). This is due to the fact that
-    -- cursor line and position are different on the first and second calls to
-    -- 'complete-function'. For example, when calling this function at the end
-    -- of the line '  he', cursor position on the second call will be
-    -- (<linenum>, 4) and line will be '  he' but on the second call -
-    -- (<linenum>, 2) and '  ' (because 2 is a column of completion start).
-    -- This request is executed only on first call because it returns `-3` on
-    -- first call (which means cancel and leave completion mode).
-    -- NOTE: using `buf_request_all()` (instead of `buf_request()`) to easily
-    -- handle possible fallback and to have all completion suggestions be
-    -- filtered with one `base` in the other route of this function. Anyway,
-    -- the most common situation is with one attached LSP client.
-    local cancel_fun = vim.lsp.buf_request_all(
-      api.current_buf(), 'textDocument/completion', params, function(result)
-      if not H.is_lsp_current(H.completion, current_id) then
-        return
-      end
+	local result = vim.lsp.buf_request_sync(
+    api.current_buf(),
+    "textDocument/completion",
+    vim.lsp.util.make_position_params(),
+    500
+  )
 
-      H.completion.lsp.status = 'received'
-      H.completion.lsp.result = result
-
-      -- Trigger LSP completion to take 'received' route
-      H.trigger_lsp()
-    end)
-
-    -- Cache cancel function to disable requests when they are not needed
-    H.completion.lsp.cancel_fun = cancel_fun
-
-    -- End completion and wait for LSP callback
-    if findstart == 1 then
-      return -3
-    else
+  local words = H.process_lsp_response(result, function(response)
+    -- Response can be `CompletionList` with 'items' field or `CompletionItem[]`
+    local items = H.table_get(response, { "items" }) or response
+    if type(items) ~= "table" then
       return {}
     end
-  else
-    if findstart == 1 then
-      return H.get_completion_start()
-    end
+    items = mini.config.lsp_completion.process_items(items, base)
+    return H.lsp_completion_response_items_to_complete_items(items)
+  end)
 
-    local words = H.process_lsp_response(H.completion.lsp.result, function(response)
-      mini.async.handled = true
-      -- Response can be `CompletionList` with 'items' field or `CompletionItem[]`
-      local items = H.table_get(response, { 'items' }) or response
-      if type(items) ~= 'table' then
-        return {}
-      end
-      items = mini.config.lsp_completion.process_items(items, base)
-      return H.lsp_completion_response_items_to_complete_items(items)
-    end)
-
-    H.completion.lsp.status = 'done'
-
-    if not vim.tbl_isempty(words) then
-      return words
-    end
+  if not vim.tbl_isempty(words) then
+    return words
   end
+  return {}
 end
 
 --- Default `mini.config.lsp_completion.process_items`.
