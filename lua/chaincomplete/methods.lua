@@ -43,7 +43,7 @@ return {
   ['lsp'] = {
     can_try = try_lsp,
     keys = '\\<C-x>\\<C-o>',
-    omnifunc = 'v:lua.chaincomplete.mini.completefunc_lsp',
+    omnifunc = 'v:lua.chaincomplete.mini.omnifunc',
   },
   ['user'] = {
     can_try = try_user,

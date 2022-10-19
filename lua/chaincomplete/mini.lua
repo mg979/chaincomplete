@@ -1,3 +1,4 @@
+-- Based on mini.nvim
 -- MIT License Copyright (c) 2021 Evgeni Chasnovski
 
 local intern = require'chaincomplete.intern'
@@ -6,23 +7,22 @@ local win = require'chaincomplete.floatwin'
 local api = require'chaincomplete.api'
 local lsp = require'chaincomplete.lsp'
 local util = require'chaincomplete.util'
-local pumvisible = vim.fn.pumvisible
-local mode = vim.fn.mode
-local vmatch = vim.fn.match
+local fn = vim.fn
+local pumvisible = fn.pumvisible
+local mode = fn.mode
+local vmatch = fn.match
 
 local capabilities, completionProvider, hoverProvider, signatureHelpProvider = lsp.providers()
 
 -- Module definition ==========================================================
 local mini = {}
 local H = {}
+local config
 
 --- Module setup
 ---
 ---@param config table: Module config table.
-function mini.setup(config)
-  config = H.setup_config(config)
-  mini.config = config
-
+function mini.setup(opts)
   -- Set flags for current insert mode session already
   mini.init()
 
@@ -34,117 +34,28 @@ function mini.setup(config)
         au InsertEnter     * lua chaincomplete.mini.auto_signature()
         au CursorMovedI    * lua chaincomplete.mini.auto_signature()
         au InsertLeavePre  * lua chaincomplete.mini.stop()
-        au CompleteDonePre * lua chaincomplete.mini.stop({'completion', 'info'})
+        au CompleteDonePre * lua chaincomplete.mini.stop({'info'})
         au InsertCharPre   * lua chaincomplete.mini.on_char_pre()
         au TextChangedI    * lua chaincomplete.mini.on_text_changed_i()
         au TextChangedP    * lua chaincomplete.mini.on_text_changed_p()
         au InsertEnter     * lua chaincomplete.mini.init()
-
-        au FileType TelescopePrompt let b:minicompletion_disable=v:true
       augroup END]]
   )
 
   -- Create highlighting
-  vim.cmd([[hi default MiniCompletionActiveParameter term=underline cterm=underline gui=underline]])
+  vim.cmd([[hi default SignatureActiveParameter term=underline cterm=underline gui=underline]])
 end
-
-mini.config = {
-  -- Delay (debounce type, in ms) between certain Neovim event and action.
-  -- This can be used to (virtually) disable certain automatic actions by
-  -- setting very high delay time (like 10^7).
-  delay = { completion = 100, info = 100, signature = 50 },
-
-  -- Maximum dimensions of floating windows for certain actions. Action entry
-  -- should be a table with 'height' and 'width' fields.
-  window_dimensions = {
-    info = { height = 25, width = 80 },
-    signature = { height = 25, width = 80 },
-  },
-
-  -- Way of how module does LSP completion
-  lsp_completion = {
-    -- `auto_setup` should be boolean indicating if LSP completion is set up on
-    -- every `BufEnter` event.
-    auto_setup = true,
-
-    -- `process_items` should be a function which takes LSP
-    -- 'textDocument/completion' response items and word to complete. Its
-    -- output should be a table of the same nature as input items. The most
-    -- common use-cases are custom filtering and sorting. You can use default
-    -- `process_items` as `mini.default_process_items()`.
-    process_items = function(items, base)
-      local res = vim.tbl_filter(function(item)
-        -- Keep items which match the base and are not snippets
-        return vim.startswith(H.get_completion_word(item), base) and item.kind ~= 15
-      end, items)
-
-      table.sort(res, function(a, b)
-        return (a.sortText or a.label) < (b.sortText or b.label)
-      end)
-
-      return res
-    end,
-  },
-
-  -- Whether to set Vim's settings for better experience
-  set_vim_settings = true,
-}
 
 -- Module functionality =======================================================
 
 function mini.init()
   local s, ft, ac = intern, vim.o.filetype, intern.autocomplete
-  H.has_completion = H.has_lsp_clients(completionProvider)
+  H.has_completion = lsp.has_capability(completionProvider)
   H.resolve_doc = s.get_opt('resolve_documentation', ft)
   H.use_info = s.get_opt('docinfo', ft)
-  H.use_sighelp = H.has_lsp_clients(signatureHelpProvider) and s.get_opt('signature', ft)
-  H.use_hover = H.has_lsp_clients(hoverProvider) and s.get_opt('use_hover', ft)
+  H.use_sighelp = lsp.has_capability(signatureHelpProvider) and s.get_opt('signature', ft)
+  H.use_hover = lsp.has_capability(hoverProvider) and s.get_opt('use_hover', ft)
   s.trigpats = ac.trigpats and (ac.trigpats[ft] or ac.trigpats['*'])
-end
-
---- Auto completion
----
---- Designed to be used with |autocmd|. No need to use it directly, everything
---- is setup in |mini.setup|.
-function mini.auto_completion(async)
-  mini.async = async
-
-  if not H.has_completion then
-    async.handled = true
-    return
-  end
-
-  H.completion.timer:stop()
-
-  -- Stop everything if inserted character is not appropriate
-  -- TODO: similar checks are run in util.can_autocomplete if in autocomplete
-  -- mode, but I can't just delete the checks here because they are still needed
-  -- for manual completion. Right now they're running two times in a row.
-  local char_is_trigger = lsp.is_completion_trigger(H.char)
-  if not (H.is_char_keyword(H.char) or char_is_trigger) then
-    H.stop_completion()
-    async.handled = true
-    return
-  end
-
-  -- If character is purely lsp trigger, request new completion
-  if char_is_trigger and intern.autocomplete.enabled then
-    H.cancel_lsp()
-  end
-  H.completion.force = char_is_trigger and intern.autocomplete.enabled
-
-  -- Cache id of Insert mode "text changed" event for a later tracking (reduces
-  -- false positive delayed triggers). The intention is to trigger completion
-  -- after the delay only if text wasn't changed during waiting. Using only
-  -- `InsertCharPre` is not enough though, as not every Insert mode change
-  -- triggers `InsertCharPre` event (notable example - hitting `<CR>`).
-  -- Also, using `+ 1` here because it is a `Pre` event and needs to cache
-  -- after inserting character.
-  H.completion.text_changed_id = H.text_changed_id + 1
-
-  -- Using delay (of debounce type) actually improves user experience
-  -- as it allows fast typing without many popups.
-  H.completion.timer:start(mini.config.delay.completion, 0, vim.schedule_wrap(H.trigger_completion))
 end
 
 --- Auto completion entry information
@@ -176,7 +87,7 @@ function mini.auto_info()
     return H.close_action_window(H.info, true)
   end
 
-  H.info.timer:start(mini.config.delay.info, 0, vim.schedule_wrap(H.show_info_window))
+  H.info.timer:start(config.delay.info, 0, vim.schedule_wrap(H.show_info_window))
 end
 
 --- Auto function signature
@@ -194,7 +105,7 @@ function mini.auto_signature()
     return
   end
 
-  H.signature.timer:start(mini.config.delay.signature, 0, vim.schedule_wrap(H.show_signature_window))
+  H.signature.timer:start(config.delay.signature, 0, vim.schedule_wrap(H.show_signature_window))
 end
 
 --- Stop actions
@@ -207,13 +118,13 @@ end
 ---
 ---@param actions table: Array containing any of 'completion', 'info', or 'signature' string.
 function mini.stop(actions)
-  actions = actions or { 'completion', 'info', 'signature' }
+  actions = actions or { 'info', 'signature' }
   for _, n in pairs(actions) do
     H.stop_actions[n]()
   end
 end
 
---- Act on every |TextChangedI|
+--- Act on every TextChangedI.
 function mini.on_text_changed_i()
   -- Track Insert mode changes
   H.text_changed_id = H.text_changed_id + 1
@@ -223,23 +134,19 @@ function mini.on_text_changed_i()
   H.stop_info()
 end
 
---- Act on every |TextChangedP|
+--- Act on every TextChangedP.
 function mini.on_text_changed_p()
   -- Track Insert mode changes
   H.text_changed_id = H.text_changed_id + 1
 end
 
---- Act on every |InsertCharPre|
+--- Act on every InsertCharPre.
 function mini.on_char_pre()
   H.char = vim.v.char
 end
 
---- Module's |complete-function|
----
---- This is the main function which replaces omnifunc.
----
---- No need to use it directly, everything is setup in |mini.setup|.
-function mini.completefunc_lsp(findstart, base)
+--- Function which replaces omnifunc.
+function mini.omnifunc(findstart, base)
   -- Early return
   if not H.has_completion then
     if findstart == 1 then
@@ -253,9 +160,6 @@ function mini.completefunc_lsp(findstart, base)
     return H.get_completion_start()
   end
 
-  local current_id = H.completion.lsp.id + 1
-  H.completion.lsp.id = current_id
-
 	local result = vim.lsp.buf_request_sync(
     api.current_buf(),
     "textDocument/completion",
@@ -265,11 +169,11 @@ function mini.completefunc_lsp(findstart, base)
 
   local words = H.process_lsp_response(result, function(response)
     -- Response can be `CompletionList` with 'items' field or `CompletionItem[]`
-    local items = H.table_get(response, { "items" }) or response
+    local items = response.items or response
     if type(items) ~= "table" then
       return {}
     end
-    items = mini.config.lsp_completion.process_items(items, base)
+    items = config.process_items(items, base)
     return H.lsp_completion_response_items_to_complete_items(items)
   end)
 
@@ -279,20 +183,10 @@ function mini.completefunc_lsp(findstart, base)
   return {}
 end
 
---- Default `mini.config.lsp_completion.process_items`.
-function mini.default_process_items(items, base)
-  return H.default_config.lsp_completion.process_items(items, base)
-end
-
 -- Helper data ================================================================
--- Module default config
-H.default_config = mini.config
 
 -- Track Insert mode changes
 H.text_changed_id = 0
-
--- Keys to trigger omnifunc
-H.cxco = api.replace_termcodes('<C-x><C-o>', true, false, true)
 
 -- Caches for different actions -----------------------------------------------
 -- Field `lsp` is a table describing state of all used LSP requests. It has the
@@ -301,14 +195,6 @@ H.cxco = api.replace_termcodes('<C-x><C-o>', true, false, true)
 -- - status: status. One of 'sent', 'received', 'done', 'canceled'.
 -- - result: result of request.
 -- - cancel_fun: function which cancels current request.
-
--- Cache for completion
-H.completion = {
-  force = false,
-  text_changed_id = 0,
-  timer = vim.loop.new_timer(),
-  lsp = { id = 0, status = nil, result = nil, cancel_fun = nil },
-}
 
 -- Cache for completion item info
 H.info = {
@@ -330,79 +216,25 @@ H.signature = {
 }
 
 -- Helper functionality =======================================================
--- Settings -------------------------------------------------------------------
-function H.setup_config(config)
-  -- General idea: if some table elements are not present in user-supplied
-  -- `config`, take them from default config
-  vim.validate({ config = { config, 'table', true } })
-  config = vim.tbl_deep_extend('force', H.default_config, config or {})
 
-  vim.validate({
-    delay = { config.delay, 'table' },
-    ['delay.completion'] = { config.delay.completion, 'number' },
-    ['delay.info'] = { config.delay.info, 'number' },
-    ['delay.signature'] = { config.delay.signature, 'number' },
+--- Default items processing function, which takes LSP
+--- 'textDocument/completion' response items and word to complete. Its output
+--- should be a table of the same nature as input items. The most common
+--- use-cases are custom filtering and sorting.
+function H.process_items(items, base)
+  local res = vim.tbl_filter(function(item)
+    -- Keep items which match the base and are not snippets
+    return vim.startswith(H.get_completion_word(item), base) and item.kind ~= 15
+  end, items)
 
-    window_dimensions = { config.window_dimensions, 'table' },
-    ['window_dimensions.info'] = { config.window_dimensions.info, 'table' },
-    ['window_dimensions.info.height'] = { config.window_dimensions.info.height, 'number' },
-    ['window_dimensions.info.width'] = { config.window_dimensions.info.width, 'number' },
-    ['window_dimensions.signature'] = { config.window_dimensions.signature, 'table' },
-    ['window_dimensions.signature.height'] = { config.window_dimensions.signature.height, 'number' },
-    ['window_dimensions.signature.width'] = { config.window_dimensions.signature.width, 'number' },
+  table.sort(res, function(a, b)
+    return (a.sortText or a.label) < (b.sortText or b.label)
+  end)
 
-    lsp_completion = { config.lsp_completion, 'table' },
-    ['lsp_completion.auto_setup'] = { config.lsp_completion.auto_setup, 'boolean' },
-    ['lsp_completion.process_items'] = { config.lsp_completion.process_items, 'function' },
-
-    set_vim_settings = { config.set_vim_settings, 'boolean' },
-  })
-
-  return config
-end
-
--- Completion triggers --------------------------------------------------------
-function H.trigger_completion()
-  -- Trigger only in Insert mode and if text didn't change after trigger
-  -- request, unless completion is forced
-  -- NOTE: check for `text_changed_id` equality is still not 100% solution as
-  -- there are cases when, for example, `<CR>` is hit just before this check.
-  -- Because of asynchronous id update and this function call (called after
-  -- delay), these still match.
-  if H.is_insert_mode()
-    and (H.completion.force or (H.completion.text_changed_id == H.text_changed_id)) then
-    H.trigger_lsp()
-  end
-end
-
-function H.trigger_lsp()
-  -- Check for popup visibility is needed to reduce flickering.
-  -- Possible issue timeline (with 100ms delay with set up LSP):
-  -- 0ms: Key is pressed.
-  -- 100ms: LSP is triggered from first key press.
-  -- 110ms: Another key is pressed.
-  -- 200ms: LSP callback is processed, triggers complete-function which
-  --   processes "received" LSP request.
-  -- 201ms: LSP request is processed, completion is (should be almost
-  --   immediately) provided, request is marked as "done".
-  -- 210ms: LSP is triggered from second key press. As previous request is
-  --   "done", it will once make whole LSP request. Having check for visible
-  --   popup should prevent here the call to complete-function.
-
-  -- When `force` is `true` then presence of popup shouldn't matter.
-  local no_popup = H.completion.force or pumvisible() == 0
-  if no_popup and H.is_insert_mode() then
-    api.feedkeys(H.cxco, 'n', false)
-  end
+  return res
 end
 
 -- Stop actions ---------------------------------------------------------------
-function H.stop_completion()
-  H.completion.timer:stop()
-  H.cancel_lsp({ H.completion })
-  H.completion.force = false
-end
-
 function H.stop_info()
   -- Id update is needed to notify that all previous work is not current
   H.info.id = H.info.id + 1
@@ -419,34 +251,13 @@ function H.stop_signature()
 end
 
 H.stop_actions = {
-  completion = H.stop_completion,
   info = H.stop_info,
   signature = H.stop_signature,
 }
 
 -- LSP ------------------------------------------------------------------------
----@param capability string|nil: Capability to check (as in `server_capabilities` of `vim.lsp.buf_get_clients` output).
----@return boolean: Whether there is at least one LSP client that has resolved `capability`.
----@private
-function H.has_lsp_clients(capability)
-  local clients = vim.lsp.buf_get_clients()
-  if vim.tbl_isempty(clients) then
-    return false
-  end
-  if not capability then
-    return true
-  end
-
-  for _, c in pairs(clients) do
-    if c[capabilities][capability] then
-      return true
-    end
-  end
-  return false
-end
-
 function H.cancel_lsp(caches)
-  caches = caches or { H.completion, H.info, H.signature }
+  caches = caches or { H.info, H.signature }
   for _, c in pairs(caches) do
     if vim.tbl_contains({ 'sent', 'received' }, c.lsp.status) then
       if c.lsp.cancel_fun then
@@ -492,18 +303,18 @@ function H.lsp_completion_response_items_to_complete_items(items)
   for _, item in pairs(items) do
     -- Documentation info
     docs = item.documentation
-    info = H.table_get(docs, { 'value' })
-    if not info and type(docs) == 'string' then
+    if type(docs) == 'string' then
       info = docs
+    else
+      info = (docs or {}).value
     end
-    info = info or ''
 
     table.insert(res, {
       word = H.get_completion_word(item),
       abbr = item.label,
       kind = vim.lsp.protocol.CompletionItemKind[item.kind] or 'Unknown',
       menu = item.detail or '',
-      info = info,
+      info = info or '',
       icase = 1,
       dup = 1,
       empty = 1,
@@ -516,7 +327,7 @@ end
 function H.get_completion_word(item)
   -- Completion word (textEdit.newText > insertText > label). This doesn't
   -- support snippet expansion.
-  return H.table_get(item, { 'textEdit', 'newText' }) or item.insertText or item.label or ''
+  return (item.textEdit or {}).newText or item.insertText or item.label or ''
 end
 
 -- Completion item info -------------------------------------------------------
@@ -672,7 +483,7 @@ function H.show_signature_window()
   vim.lsp.util.stylize_markdown(
     H.signature.bufnr,
     lines,
-    { wrap_at = mini.config.window_dimensions.signature.width }
+    { wrap_at = config.dimensions.signature.width }
   )
 
   -- Add highlighting of active parameter
@@ -681,7 +492,7 @@ function H.show_signature_window()
       api.buf_add_highlight(
         H.signature.bufnr,
         -1,
-        'MiniCompletionActiveParameter',
+        'SignatureActiveParameter',
         i - 1,
         hl_range.first,
         hl_range.last
@@ -789,13 +600,13 @@ function H.signature_window_opts()
   local lines = api.buf_get_lines(H.signature.bufnr, 0, -1, {})
   local height, width = H.floating_dimensions(
     lines,
-    mini.config.window_dimensions.signature.height,
-    mini.config.window_dimensions.signature.width
+    config.dimensions.signature.height,
+    config.dimensions.signature.width
   )
 
   -- Compute position
-  local win_line = vim.fn.winline()
-  local space_above, space_below = win_line - 1, vim.fn.winheight(0) - win_line
+  local win_line = fn.winline()
+  local space_above, space_below = win_line - 1, fn.winheight(0) - win_line
 
   local anchor, row, space
   if height <= space_above or space_below <= space_above then
@@ -806,7 +617,7 @@ function H.signature_window_opts()
 
   -- Possibly adjust floating window dimensions to fit screen
   if space < height then
-    height, width = H.floating_dimensions(lines, space, mini.config.window_dimensions.signature.width)
+    height, width = H.floating_dimensions(lines, space, config.dimensions.signature.width)
   end
 
   -- Get zero-indexed current cursor position
@@ -857,7 +668,7 @@ function H.floating_dimensions(lines, max_height, max_width)
   local l_width
   for i, l in ipairs(lines_wrap) do
     -- Use `strdisplaywidth()` to account for 'non-UTF8' characters
-    l_width = vim.fn.strdisplaywidth(l)
+    l_width = fn.strdisplaywidth(l)
     if i <= height and width < l_width then
       width = l_width
     end
@@ -883,16 +694,11 @@ function H.close_action_window(cache, keep_timer, keep_win)
 
   -- For some reason 'buftype' might be reset. Ensure that buffer is scratch.
   if cache.bufnr then
-    vim.fn.setbufvar(cache.bufnr, '&buftype', 'nofile')
+    fn.setbufvar(cache.bufnr, '&buftype', 'nofile')
   end
 end
 
 -- Utilities ------------------------------------------------------------------
-
-function H.is_char_keyword(char)
-  -- Using Vim's `match()` and `keyword` enables respecting Cyrillic letters
-  return vmatch(char, '[[:keyword:]]') >= 0
-end
 
 function H.is_insert_mode()
   return mode():match('[iR]')
@@ -929,7 +735,7 @@ function H.wrap_line(l, width)
 
   local break_id, break_match, width_id
   -- Use `strdisplaywidth()` to account for 'non-UTF8' characters
-  while vim.fn.strdisplaywidth(l) > width do
+  while fn.strdisplaywidth(l) > width do
     -- Simulate wrap by looking at breaking character from end of current break
     width_id = vim.str_byteindex(l, width)
     break_match = vmatch(l:sub(1, width_id):reverse(), breakat_pattern)
@@ -943,20 +749,28 @@ function H.wrap_line(l, width)
   return res
 end
 
-function H.table_get(t, id)
-  if type(id) ~= 'table' then
-    return H.table_get(t, { id })
-  end
-  local success, res = true, t
-  for _, i in pairs(id) do
-    success, res = pcall(function()
-      return res[i]
-    end)
-    if not (success and res) then
-      return nil
-    end
-  end
-  return res
-end
+-- Default configuration. {{{1
+config = {
+  -- Delay (debounce type, in ms) between certain Neovim event and action.
+  -- This can be used to (virtually) disable certain automatic actions by
+  -- setting very high delay time (like 10^7).
+  delay = { info = 100, signature = 50 },
+
+  -- Maximum dimensions of floating windows for certain actions. Action entry
+  -- should be a table with 'height' and 'width' fields.
+  dimensions = {
+    info = { height = 25, width = 80 },
+    signature = { height = 25, width = 80 },
+  },
+
+  -- `process_items` should be a function which takes LSP
+  -- 'textDocument/completion' response items and word to complete. Its
+  -- output should be a table of the same nature as input items. The most
+  -- common use-cases are custom filtering and sorting.
+  process_items = H.process_items,
+
+  -- Whether to set Vim's settings for better experience
+  set_vim_settings = true,
+} -- }}}
 
 return mini

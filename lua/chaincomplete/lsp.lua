@@ -17,9 +17,23 @@ end
 
 local capabilities, completionProvider, hoverProvider = lsp.providers()
 
+--- If there are valid lsp clients attached to current buffer.
+---@return boolean
 function lsp.has_client_running()
   for _, c in pairs(get_clients()) do
     if not c.is_stopped() then
+      return true
+    end
+  end
+  return false
+end
+
+--- Test if an attached client supports the requested capability.
+---@param capability string
+---@return boolean
+function lsp.has_capability(capability)
+  for _, c in pairs(get_clients()) do
+    if c[capabilities][capability] then
       return true
     end
   end
