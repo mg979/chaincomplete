@@ -160,7 +160,7 @@ Built-in methods:
 
   `file`    |i_CTRL-X_CTRL-F|
   `omni`    |i_CTRL-X_CTRL-O|
-  `lsp`     as above, but async
+  `lsp`     built-in LSP completion, but blocking {1}
   `user`    |i_CTRL-X_CTRL-U|
   `dict`    |i_CTRL-X_CTRL-K|
   `keyn`    |i_CTRL-X_CTRL-N|
@@ -173,6 +173,10 @@ Built-in methods:
   `vim`     |i_CTRL-X_CTRL-V|
   `c-n`     |i_CTRL-N|
   `c-p`     |i_CTRL-P|
+
+{1} nvim-lsp default <C-x><C-o> implementation is not blocking, as all other
+    built-in |ins-completion| methods: this plugin uses a custom handler that
+    is blocking, with a timeout.
 
 
 
