@@ -42,12 +42,23 @@ local function get_winpos(pum, lines, width, height)
   if free_right < free_left then
     col = pum.col - width - BCOL
   end
+  -- if the popup can't be placed on either side, put it above or below
   if col < 0 or col + width > all then
-    col = pum.col
-    row = pum.row + pum.size
-    if row + height > vim.o.lines then
-      col = col - 1
+    col = pum.col - 1
+    local free_top = pum.row
+    local free_bottom = vim.o.lines - pum.row - pum.height - BROW + 1
+    if free_bottom > free_top then
+      -- both pum and info go below cursor
+      row = pum.row + pum.height
+    else
+      -- pum goes below, info goes above
+      -- must make sure info doesn't go on cursor
       row = pum.row - height - BROW
+      -- if both pum and info go above cursor,
+      -- no need of extra space between them
+      if pum.row < vim.fn.winline() then
+        row = row + 1
+      end
     end
   end
   return row, col
