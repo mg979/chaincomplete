@@ -28,16 +28,16 @@ command! -bang -nargs=? -complete=customlist,chaincomplete#chain_c ChainComplete
 " Plugs and mappings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-inoremap <silent> <Plug>(AutoComplete)    <C-r>=v:lua.chaincomplete.complete()<CR>
-inoremap <silent> <Plug>(ChainComplete)   <C-r>=v:lua.chaincomplete.complete(v:false, v:true)<CR>
-inoremap <silent> <Plug>(ChainAdvance)    <C-r>=v:lua.chaincomplete.advance()<CR>
-inoremap <silent> <Plug>(ChainResume)     <C-g><C-g><C-r>=v:lua.chaincomplete.resume()<CR>
+inoremap <silent> <Plug>(AutoComplete)    <C-r>=v:lua.Chaincomplete.complete()<CR>
+inoremap <silent> <Plug>(ChainComplete)   <C-r>=v:lua.Chaincomplete.complete(v:false, v:true)<CR>
+inoremap <silent> <Plug>(ChainAdvance)    <C-r>=v:lua.Chaincomplete.advance()<CR>
+inoremap <silent> <Plug>(ChainResume)     <C-g><C-g><C-r>=v:lua.Chaincomplete.resume()<CR>
 
-if empty(maparg('<tab>', 'i')) && !hasmapto('<Plug>(ChainComplete)')
+if get(g:, 'chaincomplete_mappings', 1) && !hasmapto('<Plug>(ChainComplete)')
     imap <tab>  <Plug>(ChainComplete)
 endif
 
-if empty(maparg('<C-j>', 'i')) && !hasmapto('<Plug>(ChainAdvance)')
+if get(g:, 'chaincomplete_mappings', 1) && !hasmapto('<Plug>(ChainAdvance)')
     imap <C-j>  <Plug>(ChainAdvance)
 endif
 
@@ -52,7 +52,7 @@ set completeopt+=menuone
 
 augroup chaincomplete
     au!
-    au InsertEnter * lua require'chaincomplete'.init()
+    au InsertEnter * lua require('chaincomplete').init()
 augroup END
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

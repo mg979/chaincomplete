@@ -6,10 +6,10 @@
 " @param verbose: print current settings after command
 ""
 fun! chaincomplete#auto(bang, args, verbose)
-    lua chaincomplete = require'chaincomplete'
+    lua Chaincomplete = require'chaincomplete'
     let v = a:verbose == 'verbose' ? 'true' : 'false'
     let b = a:bang ? 'true' : 'false'
-    exe printf("lua chaincomplete.auto.set(%s, '%s', %s)", b, a:args, v)
+    exe printf("lua Chaincomplete.auto.set(%s, '%s', %s)", b, a:args, v)
 endfun
 
 ""
@@ -30,9 +30,9 @@ endfunction
 " @param args: string arguments for :ChainComplete
 ""
 fun! chaincomplete#chain(bang, args)
-    lua chaincomplete = require'chaincomplete'
+    lua Chaincomplete = require'chaincomplete'
     let b = a:bang ? 'true' : 'false'
-    exe printf("lua chaincomplete.set_chain('%s', %s, true)", a:args, b)
+    exe printf("lua Chaincomplete.set_chain('%s', %s, true)", a:args, b)
 endfun
 
 ""

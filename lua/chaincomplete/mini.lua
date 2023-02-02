@@ -30,15 +30,15 @@ function mini.setup(opts)
   vim.cmd(
     [[augroup mini
         au!
-        au CompleteChanged * lua chaincomplete.mini.auto_info()
-        au InsertEnter     * lua chaincomplete.mini.auto_signature()
-        au CursorMovedI    * lua chaincomplete.mini.auto_signature()
-        au InsertLeavePre  * lua chaincomplete.mini.stop()
-        au CompleteDonePre * lua chaincomplete.mini.stop({'info'})
-        au InsertCharPre   * lua chaincomplete.mini.on_char_pre()
-        au TextChangedI    * lua chaincomplete.mini.on_text_changed_i()
-        au TextChangedP    * lua chaincomplete.mini.on_text_changed_p()
-        au InsertEnter     * lua chaincomplete.mini.init()
+        au CompleteChanged * lua Chaincomplete.mini.auto_info()
+        au InsertEnter     * lua Chaincomplete.mini.auto_signature()
+        au CursorMovedI    * lua Chaincomplete.mini.auto_signature()
+        au InsertLeavePre  * lua Chaincomplete.mini.stop()
+        au CompleteDonePre * lua Chaincomplete.mini.stop({'info'})
+        au InsertCharPre   * lua Chaincomplete.mini.on_char_pre()
+        au TextChangedI    * lua Chaincomplete.mini.on_text_changed_i()
+        au TextChangedP    * lua Chaincomplete.mini.on_text_changed_p()
+        au InsertEnter     * lua Chaincomplete.mini.init()
       augroup END]]
   )
 

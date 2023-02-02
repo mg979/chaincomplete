@@ -20,9 +20,9 @@ local reset_if_not_pumvisible = eq .. '=pumvisible() ? "" : "' .. cgq .. '"' .. 
 --------------------------------------------------------------------------------
 
 -- sequences of keys to feed for different types of methods
-local vsq = eq .. '=pumvisible() ? "" : v:lua.chaincomplete.keys_complete("%s", "%s")' .. cr
-local hsq = eq .. '=pumvisible() ? "" : v:lua.chaincomplete.handler_complete("%s", "%s")' .. cr
-local asq = eq .. '=pumvisible() ? "" : v:lua.chaincomplete.async_complete("%s", "%s")' .. cr
+local vsq = eq .. '=pumvisible() ? "" : v:lua.Chaincomplete.keys_complete("%s", "%s")' .. cr
+local hsq = eq .. '=pumvisible() ? "" : v:lua.Chaincomplete.handler_complete("%s", "%s")' .. cr
+local asq = eq .. '=pumvisible() ? "" : v:lua.Chaincomplete.async_complete("%s", "%s")' .. cr
 
 local function verify_seq(i, k)  return string.format(vsq, i, k) end
 local function async_seq(i, m)   return string.format(asq, i, m) end
@@ -87,7 +87,7 @@ end
 --- Initialize chain on InsertEnter. Make sure lsp omnifunc is replaced with our
 --- own. Check other omnifunc/completefunc values.
 function M.init()
-  chaincomplete = M
+  Chaincomplete = M
   local replace_lsp = vim.o.omnifunc == 'v:lua.vim.lsp.omnifunc'
   chain = get_chain()
   for i = 1, #chain do
@@ -164,7 +164,7 @@ function M.advance()
     return M.complete()
   end
   index = index % #chain + 1
-  return ce .. eq .. '=v:lua.chaincomplete.complete(1)' .. cr
+  return ce .. eq .. '=v:lua.Chaincomplete.complete(1)' .. cr
 end
 
 -------------------------------------------------------------------------------

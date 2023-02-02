@@ -68,10 +68,10 @@ function auto.set(toggle, args, verbose)
 			augroup chaincomplete_auto
 			au!
 			autocmd FileType TelescopePrompt lua vim.b.autocomplete_disabled = true
-			autocmd InsertCharPre * noautocmd call v:lua.chaincomplete.auto.check()
-			autocmd TextChangedI * noautocmd call v:lua.chaincomplete.auto.start()
-			autocmd InsertLeave  * noautocmd call v:lua.chaincomplete.auto.stop()
-			autocmd CompleteDonePre * noautocmd call v:lua.chaincomplete.auto.halt()
+			autocmd InsertCharPre * noautocmd call v:lua.Chaincomplete.auto.check()
+			autocmd TextChangedI * noautocmd call v:lua.Chaincomplete.auto.start()
+			autocmd InsertLeave  * noautocmd call v:lua.Chaincomplete.auto.stop()
+			autocmd CompleteDonePre * noautocmd call v:lua.Chaincomplete.auto.halt()
 			augroup END
 			]]) -- }}}
 	else
