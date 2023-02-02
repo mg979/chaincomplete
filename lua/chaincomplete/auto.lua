@@ -22,6 +22,7 @@ local function echo(verbose) -- Print current settings {{{1
 end -- }}}
 
 function auto.set(toggle, args, verbose)
+  vim.cmd.redraw()
   local ac = vim.tbl_extend('keep', {}, intern.autocomplete) -- copy
 
   if toggle then -- if toggle {{{1
