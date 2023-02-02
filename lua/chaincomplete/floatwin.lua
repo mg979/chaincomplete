@@ -1,5 +1,5 @@
 local api = require'chaincomplete.api'
-local intern = require'chaincomplete.intern'
+local intern = require("chaincomplete.intern")
 local strwidth = vim.str_utfindex
 
 local win = {}
@@ -11,8 +11,8 @@ local close_events = { "CompleteDone", "InsertLeave", "BufLeave" }
 local function floatopts()
   return {
     border = intern.border.style,
-    relative = 'editor',
-    style = 'minimal',
+    relative = "editor",
+    style = "minimal",
   }
 end
 
@@ -88,9 +88,9 @@ end
 local function get_winhandle(buf, handle, fopts)
   if not handle or not api.win_is_valid(handle) then
     handle = api.open_win(buf, false, fopts)
-    api.win_set_option(handle, 'wrap', true)
-    api.win_set_option(handle, 'linebreak', true)
-    api.win_set_option(handle, 'breakindent', false)
+    api.win_set_option(handle, "wrap", true)
+    api.win_set_option(handle, "linebreak", true)
+    api.win_set_option(handle, "breakindent", false)
     api.close_on_events(close_events, handle)
   end
   api.win_set_config(handle, fopts)

@@ -1,13 +1,13 @@
 -- local variables {{{1
-local util = require'chaincomplete.util'
-local api = require'chaincomplete.api'
-local settings = require'chaincomplete.settings'
-local intern = require'chaincomplete.intern'
+local util = require("chaincomplete.util")
+local api = require("chaincomplete.api")
+local settings = require("chaincomplete.settings")
+local intern = require("chaincomplete.intern")
 local timer
 local pumvisible = vim.fn.pumvisible
 local wrap = vim.schedule_wrap
-local can_autocomplete = require'chaincomplete.util'.can_autocomplete
-local open_popup = util.keys('<Plug>(AutoComplete)')
+local can_autocomplete = require("chaincomplete.util").can_autocomplete
+local open_popup = util.keys("<Plug>(AutoComplete)")
 --}}}
 
 -------------------------------------------------------------------------------
@@ -17,37 +17,32 @@ local auto = {}
 
 local function echo(verbose) -- Print current settings {{{1
   if verbose then
-    print(string.format('autocomplete = %s', vim.inspect(settings.autocomplete)))
+    print(string.format("autocomplete = %s", vim.inspect(settings.autocomplete)))
   end
 end -- }}}
 
 function auto.set(toggle, args, verbose)
   vim.cmd.redraw()
-  local ac = vim.tbl_extend('keep', {}, intern.autocomplete) -- copy
+  local ac = vim.tbl_extend("keep", {}, intern.autocomplete) -- copy
 
   if toggle then -- if toggle {{{1
     ac.enabled = not ac.enabled
-
-  elseif args == 'on' then -- elseif on {{{1
+  elseif args == "on" then -- elseif on {{{1
     ac.enabled = true
-
-  elseif args == 'off' then -- elseif off {{{1
+  elseif args == "off" then -- elseif off {{{1
     ac.enabled = false
-
-  elseif args == 'triggers' then -- elseif triggers {{{1
+  elseif args == "triggers" then -- elseif triggers {{{1
     ac.enabled = true
     ac.prefix = false
-
-  elseif args == 'reset' then -- elseif reset {{{1
+  elseif args == "reset" then -- elseif reset {{{1
     -- keep the enabled state, but reset all the rest
     ac.prefix = 3
     ac.triggers = nil
-
-  elseif args ~= '' then -- elseif args {{{1
+  elseif args ~= "" then -- elseif args {{{1
     ac.enabled = true
-    ac.prefix = tonumber(args:match('%d+')) or false
+    ac.prefix = tonumber(args:match("%d+")) or false
     ac.triggers = {}
-    for chars in args:gmatch('%p+') do
+    for chars in args:gmatch("%p+") do
       table.insert(ac.triggers, chars)
     end
     if #ac.triggers == 0 then
@@ -62,10 +57,10 @@ function auto.set(toggle, args, verbose)
   echo(verbose)
 
   if ac.enabled then
-		vim.opt.completeopt:append('noselect')
-		intern.noselect = true
-		vim.cmd( -- enable autocommands {{{1
-			[[
+    vim.opt.completeopt:append("noselect")
+    intern.noselect = true
+    vim.cmd( -- enable autocommands {{{1
+      [[
 			augroup chaincomplete_auto
 			au!
 			autocmd FileType TelescopePrompt lua vim.b.autocomplete_disabled = true
@@ -74,17 +69,18 @@ function auto.set(toggle, args, verbose)
 			autocmd InsertLeave  * noautocmd call v:lua.Chaincomplete.auto.stop()
 			autocmd CompleteDonePre * noautocmd call v:lua.Chaincomplete.auto.halt()
 			augroup END
-			]]) -- }}}
-	else
-		intern.noselect = false
-		vim.opt.completeopt:remove('noselect')
-		vim.cmd( -- disable autocommands {{{1
-			[[
+			]]
+    ) -- }}}
+  else
+    intern.noselect = false
+    vim.opt.completeopt:remove("noselect")
+    vim.cmd( -- disable autocommands {{{1
+      [[
 			silent! au! chaincomplete_auto
 			silent! aug! chaincomplete_auto
-			]]) -- }}}
+			]]
+    ) -- }}}
   end
-
 end
 
 -------------------------------------------------------------------------------
@@ -95,7 +91,7 @@ end
 --- Will also reset the 'halted' flag to resume autocompletion.
 function auto.check()
   if not intern.noselect then
-    vim.opt.completeopt:append('noselect')
+    vim.opt.completeopt:append("noselect")
     intern.noselect = true
   end
   auto.halted = false
@@ -122,7 +118,7 @@ end
 function auto.complete()
   auto.stop()
   if pumvisible() == 0 and can_autocomplete() then
-    api.feedkeys(open_popup, 'm', false)
+    api.feedkeys(open_popup, "m", false)
   end
 end
 

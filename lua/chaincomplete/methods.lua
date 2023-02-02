@@ -1,12 +1,12 @@
 local util = require'chaincomplete.util'
-local lsp = require'chaincomplete.lsp'
+local lsp = require("chaincomplete.lsp")
 
 local wordchar_before = util.wordchar_before
 local trigger_before = util.trigger_before
 local filechar_before = util.filechar_before
 
 local function try_omni() -- {{{1
-  return vim.o.omnifunc ~= '' and (wordchar_before() or trigger_before())
+  return vim.o.omnifunc ~= "" and (wordchar_before() or trigger_before())
 end
 
 local function try_lsp() -- {{{1
@@ -18,11 +18,11 @@ local function try_lsp() -- {{{1
 end
 
 local function try_user() -- {{{1
-  return vim.o.completefunc ~= '' and wordchar_before()
+  return vim.o.completefunc ~= "" and wordchar_before()
 end
 
 local function try_dict() -- {{{1
-  return vim.o.dictionary ~= '' and wordchar_before()
+  return vim.o.dictionary ~= "" and wordchar_before()
 end
 
 local function try_spell() -- {{{1
@@ -32,67 +32,67 @@ end
 -- }}}
 
 return {
-  ['file'] = {
+  ["file"] = {
     can_try = filechar_before,
-    keys = '\\<C-x>\\<C-f>'
+    keys = "\\<C-x>\\<C-f>",
   },
-  ['omni'] = {
+  ["omni"] = {
     can_try = try_omni,
-    keys = '\\<C-x>\\<C-o>',
+    keys = "\\<C-x>\\<C-o>",
   },
-  ['lsp'] = {
+  ["lsp"] = {
     can_try = try_lsp,
-    keys = '\\<C-x>\\<C-o>',
-    omnifunc = 'v:lua.Chaincomplete.mini.omnifunc',
+    keys = "\\<C-x>\\<C-o>",
+    omnifunc = "v:lua.Chaincomplete.mini.omnifunc",
   },
-  ['user'] = {
+  ["user"] = {
     can_try = try_user,
-    keys = '\\<C-x>\\<C-u>',
+    keys = "\\<C-x>\\<C-u>",
   },
-  ['dict'] = {
+  ["dict"] = {
     can_try = try_dict,
-    keys = '\\<C-x>\\<C-k>',
+    keys = "\\<C-x>\\<C-k>",
   },
-  ['keyn'] = {
+  ["keyn"] = {
     can_try = wordchar_before,
-    keys = '\\<C-x>\\<C-n>',
+    keys = "\\<C-x>\\<C-n>",
   },
-  ['keyp'] = {
+  ["keyp"] = {
     can_try = wordchar_before,
-    keys = '\\<C-x>\\<C-p>',
+    keys = "\\<C-x>\\<C-p>",
     invert = true,
   },
-  ['line'] = {
+  ["line"] = {
     can_try = wordchar_before,
-    keys = '\\<C-x>\\<C-l>',
+    keys = "\\<C-x>\\<C-l>",
   },
-  ['incl'] = {
+  ["incl"] = {
     can_try = wordchar_before,
-    keys = '\\<C-x>\\<C-i>',
+    keys = "\\<C-x>\\<C-i>",
   },
-  ['defs'] = {
+  ["defs"] = {
     can_try = wordchar_before,
-    keys = '\\<C-x>\\<C-d>',
+    keys = "\\<C-x>\\<C-d>",
   },
-  ['tags'] = {
+  ["tags"] = {
     can_try = wordchar_before,
-    keys = '\\<C-x>\\<C-]>',
+    keys = "\\<C-x>\\<C-]>",
   },
-  ['spel'] = {
+  ["spel"] = {
     can_try = try_spell,
-    keys = '\\<C-x>s',
+    keys = "\\<C-x>s",
   },
-  ['vim'] = {
+  ["vim"] = {
     can_try = wordchar_before,
-    keys = '\\<C-x>\\<C-v>',
+    keys = "\\<C-x>\\<C-v>",
   },
-  ['c-n'] = {
+  ["c-n"] = {
     can_try = wordchar_before,
-    keys = '\\<C-n>',
+    keys = "\\<C-n>",
   },
-  ['c-p'] = {
+  ["c-p"] = {
     can_try = wordchar_before,
-    keys = '\\<C-p>',
+    keys = "\\<C-p>",
     invert = true,
   },
 }
