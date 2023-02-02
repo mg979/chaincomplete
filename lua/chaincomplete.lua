@@ -32,6 +32,9 @@ local function handler_seq(i, m) return string.format(hsq, i, m) end
 
 local M = {}
 
+-- Set global variable to this module
+Chaincomplete = M
+
 -- table with buffers and their active chain
 M.buffers = {}
 
@@ -87,7 +90,6 @@ end
 --- Initialize chain on InsertEnter. Make sure lsp omnifunc is replaced with our
 --- own. Check other omnifunc/completefunc values.
 function M.init()
-  Chaincomplete = M
   local replace_lsp = vim.o.omnifunc == 'v:lua.vim.lsp.omnifunc'
   chain = get_chain()
   for i = 1, #chain do
