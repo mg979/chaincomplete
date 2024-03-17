@@ -58,9 +58,6 @@ Example mappings:
   imap <c-;> <Plug>(ChainAdvance)
 <
 
-Unless you have already mapped <Tab> and <C-j> in insert mode, you don't need
-any special setup.
-
 Note that autocompletion is disabled by default. To enable it:
 >lua
   -- ex command: :AutoComplete on
@@ -71,8 +68,6 @@ while this will enable it for triggers only:
   -- ex command: :AutoComplete triggers
   vim.g.chaincomplete = { autocomplete = 'triggers' }
 <
-If you want to integrate it with some snippets plugin, you should use the
-<Plug>s.
 
 
 
@@ -102,9 +97,7 @@ Read |chaincomplete-methods| to know how to define chains.
   {verbose} AutoComplete[!] {args}
 
 {verbose} will print current settings after running the command.
-
 {bang} will apply settings for current filetype.
-
 {args} can be:
 
   `on`          enable autocompletion
@@ -127,7 +120,7 @@ Examples:
   AutoComplete triggers 2
 
 means: enable autocompletions for currently defined triggers. Keyword
-autocompletion will be enabled for at least 2 |word| characters befor the
+autocompletion will be enabled for at least 2 |word| characters before the
 cursor. |lsp| will use its own triggers.
 
 >
@@ -222,7 +215,8 @@ Default:
   `lsp_fuzzy`     use fuzzy matching for |lsp| by default
 
   `fuzzy_minchars`: for methods that support fuzzy completion, the minimum
-  number of characters required for the prefix to be completed in a fuzzy way
+  number of characters required for the prefix to be completed in a fuzzy way,
+  and that are not matched in a fuzzy way themselves.
 
                                                   *chaincomplete-autocomplete*
 The `autocomplete` option can be:
@@ -306,6 +300,8 @@ See also |:AutoComplete|.
 
 REGISTERING CUSTOM METHODS                              *chaincomplete-custom*
 ==============================================================================
+
+NOT IMPLEMENED YET
 
 You can create and register new methods, so that you can use them in any
 chain. Methods can be async or not (blocking). For most purposes, blocking
