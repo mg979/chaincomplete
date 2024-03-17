@@ -11,64 +11,91 @@ if vim.g.loaded_chaincomplete then
 end
 vim.g.loaded_chaincomplete = true
 
+local api, nvim, _, arr = require('nvim-lib')()
+
 -- Needed for popup check
 vim.opt.completeopt:append("menuone")
 
 -- Initialize chain on every InsertEnter.
-vim.api.nvim_create_autocmd("InsertEnter", {
+api.create_autocmd('InsertEnter', {
   callback = function()
-    require("chaincomplete").init()
+    require('chaincomplete').init()
   end,
 })
-
-local command = vim.api.nvim_create_user_command
-local map = vim.keymap.set
 
 -------------------------------------------------------------------------------
 -- Commands
 -------------------------------------------------------------------------------
 
-local chain_c = { "settings", "reset" }
-local auto_c = { "triggers", "on", "off", "reset" }
+nvim.commands({
 
-command("ChainComplete", function(cmd)
-  require("chaincomplete").set_chain(cmd.args, cmd.bang, true)
-end, {
-  bang = true,
-  nargs = "?",
-  complete = function(a)
-    return vim.tbl_filter(function(v)
-      return v:find("^" .. a)
-    end, chain_c)
-  end,
-})
+  ChainComplete = {
+    function(cmd)
+      require('chaincomplete').set_chain(cmd.args, cmd.bang, true)
+    end,
+    bang = true,
+    nargs = '?',
+    complete = function(a)
+      return arr.filter(function(v)
+        return v:find('^' .. a)
+      end, { 'settings', 'reset' })
+    end,
+  },
 
-command("AutoComplete", function(cmd)
-  require("chaincomplete").auto.set(cmd.bang, cmd.args, cmd.mods == "verbose")
-end, {
-  bang = true,
-  nargs = "?",
-  complete = function(a)
-    return vim.tbl_filter(function(v)
-      return v:find("^" .. a)
-    end, auto_c)
-  end,
+  AutoComplete = {
+    function(cmd)
+      require('chaincomplete').auto.set(
+        cmd.bang,
+        cmd.args,
+        cmd.mods == 'verbose'
+      )
+    end,
+    bang = true,
+    nargs = '?',
+    complete = function(a)
+      return arr.filter(function(v)
+        return v:find('^' .. a)
+      end, { 'triggers', 'on', 'off', 'reset' })
+    end,
+  },
 })
 
 -------------------------------------------------------------------------------
 -- Mappings
 -------------------------------------------------------------------------------
 
-map("i", "<Plug>(AutoComplete)", "<C-r>=v:lua.Chaincomplete.complete()<CR>", { silent = true })
-map("i", "<Plug>(ChainComplete)", "<C-r>=v:lua.Chaincomplete.complete(v:false, v:true)<CR>", { silent = true })
-map("i", "<Plug>(ChainAdvance)", "<C-r>=v:lua.Chaincomplete.advance()<CR>", { silent = true })
-map("i", "<Plug>(ChainResume)", "<C-g><C-g><C-r>=v:lua.Chaincomplete.resume()<CR>", { silent = true })
+local map = vim.keymap.set
+
+map(
+  'i',
+  '<Plug>(AutoComplete)',
+  '<C-r>=v:lua.Chaincomplete.complete()<CR>',
+  { silent = true }
+)
+map(
+  'i',
+  '<Plug>(ChainComplete)',
+  '<C-r>=v:lua.Chaincomplete.complete(v:false, v:true)<CR>',
+  { silent = true }
+)
+map(
+  'i',
+  '<Plug>(ChainAdvance)',
+  '<C-r>=pumvisible() ? v:lua.Chaincomplete.advance() : v:lua.Chaincomplete.complete(v:false, v:true)<CR>',
+  { silent = true }
+)
+map(
+  'i',
+  '<Plug>(ChainResume)',
+  '<C-g><C-g><C-r>=v:lua.Chaincomplete.resume()<CR>',
+  { silent = true }
+)
 
 if vim.g.chaincomplete_mappings == true then
-  if vim.fn.hasmapto("<Plug>(ChainComplete)") == 0 then
-    map("i", "<Tab>", "<Plug>(ChainComplete)")
+  if vim.fn.hasmapto('<Plug>(ChainComplete)') == 0 then
+    map('i', '<c-j>', '<Plug>(ChainComplete)')
   end
-  if vim.fn.hasmapto("<Plug>(ChainAdvance)") == 0 then
-    map("i", "<C-j>", "<Plug>(ChainAdvance)")
+  if vim.fn.hasmapto('<Plug>(ChainAdvance)') == 0 then
+    map('i', '<C-;>', '<Plug>(ChainAdvance)')
   end
 end

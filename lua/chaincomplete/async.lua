@@ -1,8 +1,8 @@
 -- local variables {{{1
-local util = require'chaincomplete.util'
+local nvim = require("nvim-lib").nvim
 local api = require'chaincomplete.api'
 local completeitems = require'chaincomplete.completeitems'
-local resume = util.keys('<Plug>(ChainResume)')
+local resume = nvim.keycodes['<Plug>(ChainResume)']
 local mode = vim.fn.mode
 local pumvisible = vim.fn.pumvisible
 --}}}

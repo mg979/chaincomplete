@@ -1,36 +1,36 @@
+local api, nvim = require("nvim-lib")()
+
 local bufnr = vim.fn.bufnr
 local pumvisible = vim.fn.pumvisible
-local util = require("chaincomplete.util")
-local methods = require("chaincomplete.methods")
-local intern = require("chaincomplete.intern")
-local settings = require("chaincomplete.settings")
-local completeitems = require("chaincomplete.completeitems").invoke
+local util = require('chaincomplete.util')
+local methods = require('chaincomplete.methods')
+local intern = require('chaincomplete.intern')
+local settings = require('chaincomplete.settings')
+local completeitems = require('chaincomplete.completeitems').invoke
 
-local cp = util.keys("<C-p>")
-local cn = util.keys("<C-n>")
-local ce = util.keys("<C-e>")
-local tab = util.keys("<Tab>")
-local eq = util.keys("<C-r>")
-local cr = util.keys("<Cr>")
-local cg = util.keys("<C-g><C-g>")
-local cgq = "\\<C-g>\\<C-g>"
+local CtrlP = nvim.keycodes.CtrlP
+local CtrlN = nvim.keycodes.CtrlN
+local CtrlE = nvim.keycodes.CtrlE
+local Tab = nvim.keycodes.Tab
+local CtrlR = nvim.keycodes.CtrlR
+local CtrlG = nvim.keycodes['<C-g><C-g>']
 
-local reset_if_not_pumvisible = eq .. '=pumvisible() ? "" : "' .. cgq .. '"' .. cr
+local ResetIfNotPumvisible = CtrlR .. '=pumvisible() ? "" : "\\<C-g>\\<C-g>"\r'
 
 --------------------------------------------------------------------------------
 
 -- sequences of keys to feed for different types of methods
-local vsq = eq .. '=pumvisible() ? "" : v:lua.Chaincomplete.keys_complete("%s", "%s")' .. cr
-local hsq = eq .. '=pumvisible() ? "" : v:lua.Chaincomplete.handler_complete("%s", "%s")' .. cr
-local asq = eq .. '=pumvisible() ? "" : v:lua.Chaincomplete.async_complete("%s", "%s")' .. cr
+local vsq = CtrlR .. '=pumvisible() ? "" : v:lua.Chaincomplete.KeysComplete("%s", "%s")\r'
+local hsq = CtrlR .. '=pumvisible() ? "" : v:lua.Chaincomplete.HandlerComplete("%s", "%s")\r'
+local asq = CtrlR .. '=pumvisible() ? "" : v:lua.Chaincomplete.AsyncComplete("%s", "%s")\r'
 
-local function verify_seq(i, k)
+local function Verify(i, k)
   return string.format(vsq, i, k)
 end
-local function async_seq(i, m)
+local function Async(i, m)
   return string.format(asq, i, m)
 end
-local function handler_seq(i, m)
+local function Handler(i, m)
   return string.format(hsq, i, m)
 end
 
@@ -45,14 +45,14 @@ Chaincomplete = M
 M.buffers = {}
 
 -- autocompletion and async handlers
-M.auto = require("chaincomplete.auto")
-M.async = require("chaincomplete.async")
-M.mini = require("chaincomplete.mini")
+M.auto = require('chaincomplete.auto')
+M.async = require('chaincomplete.async')
+M.mini = require('chaincomplete.mini')
 
 M.mini.setup()
 
-local chain -- current chain
-local index = 1 -- current position in the chain
+local CurChain -- current chain
+local Index = 1 -- current position in the chain
 
 -------------------------------------------------------------------------------
 -- Local functions
@@ -75,7 +75,7 @@ end
 local function ensure_select(manual)
   if manual and intern.noselect then
     intern.noselect = false
-    vim.opt.completeopt:remove("noselect")
+    vim.opt.completeopt:remove('noselect')
   end
 end
 
@@ -96,14 +96,12 @@ end
 --- Initialize chain on InsertEnter. Make sure lsp omnifunc is replaced with our
 --- own. Check other omnifunc/completefunc values.
 function M.init()
-  local replace_lsp = vim.o.omnifunc == "v:lua.vim.lsp.omnifunc"
-  chain = get_chain()
-  for i = 1, #chain do
-    local method = chain[i]
-    if replace_lsp and method == "omni" then
-      table.remove(chain, i)
-      table.insert(chain, i, "lsp")
-      M.buffers[bufnr()] = chain
+  local replace_lsp = vim.o.omnifunc == 'v:lua.vim.lsp.omnifunc'
+  CurChain = get_chain()
+  for i = 1, #CurChain do
+    local method = CurChain[i]
+    if replace_lsp and method == 'omni' then
+      CurChain[i] = 'lsp'
     end
     check_funcs(methods[method])
   end
@@ -132,32 +130,32 @@ end
 function M.complete(advancing, manual)
   ensure_select(manual)
   if pumvisible() == 1 then
-    return methods[chain[index]].invert and cp or cn
+    return methods[CurChain[Index]].invert and CtrlP or CtrlN
   end
   if not advancing then
-    index = 1
+    Index = 1
   end
-  local ret = ""
-  for i = index, #chain do
-    local method = chain[i]
+  local ret = ''
+  for i = Index, #CurChain do
+    local method = CurChain[i]
     local m = methods[method]
     if m.can_try() then
       if m.async then
-        return ret .. async_seq(i, method)
+        return ret .. Async(i, method)
       elseif m.items or m.handler then
-        ret = ret .. handler_seq(i, method)
+        ret = ret .. Handler(i, method)
       else
-        ret = ret .. verify_seq(i, m.keys)
+        ret = ret .. Verify(i, m.keys)
       end
     end
   end
-  if ret == "" then
+  if ret == '' then
     if not settings.autocomplete or not settings.autocomplete.enabled then
-      return advancing and "" or tab
+      return advancing and '' or Tab
     end
-    return manual and tab or ""
+    return manual and Tab or ''
   else
-    return ret .. reset_if_not_pumvisible
+    return ret .. ResetIfNotPumvisible
   end
 end
 
@@ -171,8 +169,8 @@ function M.advance()
   if pumvisible() == 0 then
     return M.complete()
   end
-  index = index % #chain + 1
-  return ce .. eq .. "=v:lua.Chaincomplete.complete(1)" .. cr
+  Index = index % #CurChain + 1
+  return CtrlE .. CtrlR .. '=v:lua.Chaincomplete.complete(1)\r'
 end
 
 -------------------------------------------------------------------------------
@@ -181,19 +179,19 @@ end
 --- @return string: keys sequence or empty string
 ---
 function M.resume()
-  index = index % #chain + 1
-  return index > 1 and M.complete(true) or ""
+  Index = Index % #CurChain + 1
+  return Index > 1 and M.complete(true) or ''
 end
 
 -------------------------------------------------------------------------------
 --- Store the index in the chain of the next key sequence, then return the
 --- method keys sequence. Used by vim ins-completion methods.
---- @param i string: the next method name
+--- @param i number: the method index
 --- @return string: reset sequence, then method keys
 ---
-function M.keys_complete(i, keys)
-  index = tonumber(i)
-  return cg .. keys
+function M.KeysComplete(i, keys)
+  Index = tonumber(i)
+  return CtrlG .. keys
 end
 
 -------------------------------------------------------------------------------
@@ -214,15 +212,15 @@ end
 --- @param method string: the method name
 --- @return string: keys sequence or empty string
 ---
-function M.handler_complete(i, method)
-  index = tonumber(i)
+function M.HandlerComplete(i, method)
+  Index = tonumber(i)
   local m = methods[method]
   if m.handler then
     m.handler()
   else
-    completeitems(type(m.items) == "function" and m.items() or m.items)
+    completeitems(type(m.items) == 'function' and m.items() or m.items)
   end
-  return m.keys and cg .. m.keys or ""
+  return m.keys and CtrlG .. m.keys or ''
 end
 
 -------------------------------------------------------------------------------
@@ -231,11 +229,11 @@ end
 --- @param method string: the method name
 --- @return string: keys sequence or empty string
 ---
-function M.async_complete(i, method)
-  index = tonumber(i)
-  local isLast = index == #chain
+function M.AsyncComplete(i, method)
+  Index = tonumber(i)
+  local isLast = Index == #CurChain
   M.async.start(methods[method], isLast)
-  return cg .. (methods[method].keys or "")
+  return CtrlG .. (methods[method].keys or '')
 end
 
 -------------------------------------------------------------------------------
@@ -247,7 +245,7 @@ end
 --- @return table: validated chain
 local function verify_chain(s)
   local newchain = {}
-  for v in s:gmatch("%S+") do
+  for v in s:gmatch('%S+') do
     if methods[v] then
       table.insert(newchain, v)
     end
@@ -258,9 +256,9 @@ end
 --- Get chain from command line input().
 --- @return table: the validated chain, or nil
 local function chain_from_input()
-  local oldchain = table.concat(get_chain(), " ")
-  local input = vim.fn.input("Enter a new chain: ", oldchain)
-  if input == "" then
+  local oldchain = table.concat(get_chain(), ' ')
+  local input = vim.fn.input('Enter a new chain: ', oldchain)
+  if input == '' then
     return nil
   end
   return verify_chain(input)
@@ -272,21 +270,21 @@ end
 --- @param echo boolean: print current chain to command line
 function M.set_chain(args, input, echo)
   local newchain
-  if args == "settings" then
+  if args == 'settings' then
     return print(vim.inspect(settings))
-  elseif args == "reset" then
+  elseif args == 'reset' then
     newchain = util.default_chain()
   elseif input then
     newchain = chain_from_input()
-  elseif args ~= "" then
+  elseif args ~= '' then
     newchain = verify_chain(args)
   end
   if newchain then
     M.buffers[bufnr()] = newchain
   end
   if echo then
-    vim.cmd("redraw")
-    print("current chain: " .. table.concat(get_chain(), ", "))
+    vim.cmd('redraw')
+    print('current chain: ' .. table.concat(get_chain(), ', '))
   end
 end
 
@@ -299,7 +297,7 @@ end
 --- @param m table
 function M.register_method(name, m)
   if not m.can_try or (not m.items and not m.handler and not m.async) then
-    print("Failed to register completion method: " .. name)
+    print('Failed to register completion method: ' .. name)
     return
   end
   methods[name] = m

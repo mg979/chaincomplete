@@ -2,7 +2,6 @@
 -- MIT License Copyright (c) 2021 Evgeni Chasnovski
 
 local intern = require'chaincomplete.intern'
-local ut = require'chaincomplete.util'
 local win = require'chaincomplete.floatwin'
 local api = require'chaincomplete.api'
 local lsp = require'chaincomplete.lsp'
@@ -59,9 +58,6 @@ function mini.init()
 end
 
 --- Auto completion entry information
----
---- Designed to be used with |autocmd|. No need to use it directly, everything
---- is setup in |mini.setup|.
 function mini.auto_info()
   if not H.use_info then
     return
@@ -82,8 +78,8 @@ function mini.auto_info()
   H.info.event = vim.v.event
   H.info.id = H.info.id + 1
 
-  -- Don't event try to show info if nothing is selected in popup
-  if vim.tbl_isempty(H.info.event.completed_item) then
+  -- Don't try to show info if nothing is selected in popup
+  if not next(H.info.event.completed_item) then
     return H.close_action_window(H.info, true)
   end
 
@@ -177,7 +173,7 @@ function mini.omnifunc(findstart, base)
     return H.lsp_completion_response_items_to_complete_items(items)
   end)
 
-  if not vim.tbl_isempty(words) then
+  if next(words) then
     return words
   end
   return {}
@@ -345,7 +341,7 @@ function H.show_info_window()
       if not doc then
         return H.close_action_window(H.info, true)
       end
-      return ut.sanitize_markdown(api.trim_empty(api.convert_to_markdown(doc)))
+      return util.sanitize_markdown(api.trim_empty(api.convert_to_markdown(doc)))
     end)
     H.info.lsp.status = 'done'
   else
@@ -488,7 +484,7 @@ function H.show_signature_window()
 
   -- Add highlighting of active parameter
   for i, hl_range in ipairs(hl_ranges) do
-    if not vim.tbl_isempty(hl_range) and hl_range.first and hl_range.last then
+    if next(hl_range) and hl_range.first and hl_range.last then
       api.buf_add_highlight(
         H.signature.bufnr,
         -1,
@@ -537,7 +533,7 @@ function H.signature_window_lines()
 end
 
 function H.process_signature_response(response)
-  if not response.signatures or vim.tbl_isempty(response.signatures) then
+  if not response.signatures or not next(response.signatures) then
     return {}
   end
 

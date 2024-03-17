@@ -1,13 +1,12 @@
 -- local variables {{{1
-local util = require("chaincomplete.util")
-local api = require("chaincomplete.api")
+local api, nvim, tbl, arr = require("nvim-lib")()
 local settings = require("chaincomplete.settings")
 local intern = require("chaincomplete.intern")
 local timer
 local pumvisible = vim.fn.pumvisible
 local wrap = vim.schedule_wrap
 local can_autocomplete = require("chaincomplete.util").can_autocomplete
-local open_popup = util.keys("<Plug>(AutoComplete)")
+local open_popup = nvim.keycodes["<Plug>(AutoComplete)"]
 --}}}
 
 -------------------------------------------------------------------------------

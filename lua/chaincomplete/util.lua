@@ -11,13 +11,6 @@ local util = {}
 
 local capabilities = vim.fn.has("nvim-0.8.0") and "server_capabilities" or "resolved_capabilities"
 
---- Translate vim keys notations in a terminal sequence.
---- @param keys string
---- @return string
-function util.keys(keys)
-  return api.replace_termcodes(keys, true, false, true)
-end
-
 --- Get N characters before cursor.
 --- @param length number: the number of characters
 --- @return string
