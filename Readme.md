@@ -8,12 +8,18 @@ Autocompletion (completion as you type) is supported but it's not default.
 
 -------------------------------------------------------------------------------
 
+### Dependencies
+
+[nvim-lib](https://github.com/mg979/nvim-lib)
+
+-------------------------------------------------------------------------------
+
 ### Features
 
 Supported completion methods:
 
 - built-in completion methods (`:help ins-completion`)
-- LSP completion
+- LSP completion (built-in client)
 
 Optional features:
 
@@ -26,7 +32,10 @@ Optional features:
 
 ### Quick start
 
-Unless you have already mapped <kbd>Tab</kbd> and <kbd>C-j</kbd> in insert mode, you don't need any special setup.
+Example mappings:
+
+    imap <c-j> <Plug>(ChainComplete)
+    imap <c-;> <Plug>(ChainAdvance)
 
 Note that autocompletion is disabled by default. To enable it:
 
@@ -44,14 +53,12 @@ or in your vimrc:
 
     vim.g.chaincomplete = { autocomplete = 'triggers' }
 
-If you want to integrate it with some snippets plugin, there are plugs available, that you can use with `nvim_feedkeys()`.
-
 For the rest of the documentation, `:help chaincomplete`
 
 -------------------------------------------------------------------------------
 
 ### Credits
 
-Bram Moolenar for Vim  
-Lifepillar for [vim-mucomplete](https://github.com/lifepillar/vim-mucomplete)  
+Bram Moolenar for Vim
+Lifepillar for [vim-mucomplete](https://github.com/lifepillar/vim-mucomplete)
 Evgeni Chasnovski for [mini.vim](https://github.com/echasnovski/mini.nvim)

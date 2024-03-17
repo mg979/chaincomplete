@@ -3,15 +3,15 @@
 CHAINCOMPLETE - TABLE OF CONTENTS                              *chaincomplete*
 ==============================================================================
 
-  Features............................................|chaincomplete-features|
-  Quick start.........................................|chaincomplete-quick|
-  Commands............................................|chaincomplete-commands|
-  Plugs...............................................|chaincomplete-plugs|
-  Chains and methods..................................|chaincomplete-methods|
-  Settings............................................|chaincomplete-settings|
-  Registering custom methods..........................|chaincomplete-custom|
-  Credits.............................................|chaincomplete-credits|
-  License.............................................|chaincomplete-license|
+  Features........................................... |chaincomplete-features|
+  Quick start........................................ |chaincomplete-quick|
+  Commands........................................... |chaincomplete-commands|
+  Plugs.............................................. |chaincomplete-plugs|
+  Chains and methods................................. |chaincomplete-methods|
+  Settings........................................... |chaincomplete-settings|
+  Registering custom methods......................... |chaincomplete-custom|
+  Credits............................................ |chaincomplete-credits|
+  License............................................ |chaincomplete-license|
 
 
 
@@ -34,7 +34,7 @@ FEATURES                                              *chaincomplete-features*
 Supported completion methods:
 
 - built-in completion methods (|ins-completion|)
-- |lsp| completion
+- |lsp| completion (optionally fuzzy)
 - custom methods, with handlers based on |complete()|
 
 Optional features:
@@ -47,21 +47,32 @@ Optional features:
 QUICK START                                              *chaincomplete-quick*
 ==============================================================================
 
+These plugs are available:
+
+<Plug>(ChainComplete)   start manual completion
+<Plug>(ChainAdvance)    advance to next method in the chain
+
+Example mappings:
+>vim
+  imap <c-j> <Plug>(ChainComplete)
+  imap <c-;> <Plug>(ChainAdvance)
+<
+
 Unless you have already mapped <Tab> and <C-j> in insert mode, you don't need
 any special setup.
 
 Note that autocompletion is disabled by default. To enable it:
->
+>lua
   -- ex command: :AutoComplete on
   vim.g.chaincomplete = { autocomplete = true }
 <
 while this will enable it for triggers only:
->
+>lua
   -- ex command: :AutoComplete triggers
   vim.g.chaincomplete = { autocomplete = 'triggers' }
 <
-If you want to integrate it with some snippets plugin, there are plugs
-available, that you can use with |nvim_feedkeys()|. See |chaincomplete-plugs|.
+If you want to integrate it with some snippets plugin, you should use the
+<Plug>s.
 
 
 
@@ -75,35 +86,49 @@ Examples: >
   ChainComplete           print current chain
   ChainComplete!          edit current chain (from input)
   ChainComplete reset     reset chain to default
-  ChainComplete {chain}   set chain to a space-separated list of methods
   ChainComplete settings  print all current settings
+
+  ChainComplete {m1}, ... set chain to a list of methods
+  ChainComplete ^spell    insert one method in the first position
+  ChainComplete +spell    insert one method in the last position
+  ChainComplete -spell    remove one method
+  ChainComplete 2spell    insert one method in the second (or N) position
 <
 Read |chaincomplete-methods| to know how to define chains.
+
+------------------------------------------------------------------------------
 
                                                                *:AutoComplete*
   {verbose} AutoComplete[!] {args}
 
 {verbose} will print current settings after running the command.
 
-{bang} will toggle current state, without changing other options.
+{bang} will apply settings for current filetype.
 
 {args} can be:
 
   `on`          enable autocompletion
   `off`         disable autocompletion
   `triggers`    enable for triggers only
+  `notriggers`  disable triggers
   `reset`       reset prefix and triggers (but keep enabled state)
   `3 . ->`      space-separated arguments, with a number (needed characters to
               trigger autocompletion) and/or trigger patterns
 
-The `.` argument translates into `%w%.` (dot preceded by |word| character).
+  `triggers`, `on`, numbers (defining prefix) and symbols (defining triggers)
+  can be combined.
+
+Triggers are only supported by certain methods, and will only trigger
+completion if preceded by |word| characters (unless prefix is 1).
+This restriction doesn't apply to `lsp`, if you set `triggers` to `true`.
 
 Examples:
 >
-  AutoComplete triggers
+  AutoComplete triggers 2
 
-means: enable autocompletions for currently defined triggers, without changing
-any setting. Keyword completion will be disabled.
+means: enable autocompletions for currently defined triggers. Keyword
+autocompletion will be enabled for at least 2 |word| characters befor the
+cursor. |lsp| will use its own triggers.
 
 >
   AutoComplete 3 . ->
@@ -120,24 +145,9 @@ a |word| character.
   AutoComplete 2
 
 means: enable autocompletion, trigger it if there's at least 2 |word|
-characters before the cursor, don't use triggers.
+characters before the cursor, don't use trigger characters.
 
 See also |chaincomplete-autocomplete|.
-
-
-
-
-PLUGS                                                    *chaincomplete-plugs*
-==============================================================================
-
-These plugs are available and mapped by default (if not mapped already, and if
-the key is not mapped):
-
-Plug                    Mapping ~
--------------------------------------------------------------------------------
-<Plug>(ChainComplete)   <Tab>       start manual completion
-<Plug>(ChainAdvance)    <C-j>       advance to next method in the chain
-
 
 
 
@@ -158,25 +168,27 @@ would set the chain for the current buffer to attempt in sequence:
 
 Built-in methods:
 
-  `file`    |i_CTRL-X_CTRL-F|
-  `omni`    |i_CTRL-X_CTRL-O|
-  `lsp`     built-in LSP completion, but blocking {1}
-  `user`    |i_CTRL-X_CTRL-U|
-  `dict`    |i_CTRL-X_CTRL-K|
-  `keyn`    |i_CTRL-X_CTRL-N|
-  `keyp`    |i_CTRL-X_CTRL-P|
-  `line`    |i_CTRL-X_CTRL-L|
-  `incl`    |i_CTRL-X_CTRL-I|
-  `defs`    |i_CTRL-X_CTRL-D|
-  `tags`    |i_CTRL-X_CTRL-]|
-  `spel`    |i_CTRL-X_s|
-  `vim`     |i_CTRL-X_CTRL-V|
-  `c-n`     |i_CTRL-N|
-  `c-p`     |i_CTRL-P|
+  `files`       |i_CTRL-X_CTRL-F|
+  `omni`        |i_CTRL-X_CTRL-O|
+  `lsp`         built-in LSP completion, but blocking {1}
+  `lspf`        as above, but with fuzzy matching, see settings
+  `user`        |i_CTRL-X_CTRL-U|
+  `dictionary`  |i_CTRL-X_CTRL-K|
+  `thesaurus`   |i_CTRL-X_CTRL-T|
+  `keyn`        |i_CTRL-X_CTRL-N|
+  `keyp`        |i_CTRL-X_CTRL-P|
+  `line`        |i_CTRL-X_CTRL-L|
+  `includes`    |i_CTRL-X_CTRL-I|
+  `defines`     |i_CTRL-X_CTRL-D|
+  `tags`        |i_CTRL-X_CTRL-]|
+  `spell`       |i_CTRL-X_s|
+  `vim`         |i_CTRL-X_CTRL-V|
+  `c-n`         |i_CTRL-N|
+  `c-p`         |i_CTRL-P|
 
-{1} nvim-lsp default <C-x><C-o> implementation is not blocking, as all other
-    built-in |ins-completion| methods: this plugin uses a custom handler that
-    is blocking, with a timeout.
+{1} nvim-lsp default <C-x><C-o> implementation is async, differently from all
+    other built-in |ins-completion| methods: this plugin uses a custom handler
+    that is blocking, with a timeout.
 
 
 
@@ -187,28 +199,30 @@ You don't need to change the settings or initialize the plugin if the default
 settings meet your needs. Otherwise set the *g:chaincomplete* variable to
 a dictionary.
 
-Default (lua):
->
+Default:
+>lua
   vim.g.chaincomplete = {
     border = 'single',
     autocomplete = false,
-    docinfo = true,
+    info = true,
     signature = true,
     use_hover = true,
     chain_lsp = { 'lsp', 'file', 'user', 'c-n' },
     chain_nolsp = { 'omni', 'file', 'user', 'c-n' },
+    lsp_fuzzy = false,
+    lsp_fuzzy_minchars = 2,
   }
 <
-  `border`        see |nvim_open_win()| and search 'border', can be a table
-  `autocomplete`  enable autocompletion as you type, can be a table
-  `docinfo`       enable info popup (can be a table with filetypes)
-  `use_hover`     popup use `hover` documentation (can be a table with filetypes)
-  `signature`     enable signature help (can be a table with filetypes)
+  `border`        see |nvim_open_win()| and search 'border'
+  `autocomplete`  autocompletion as you type
+  `info`          info popup
+  `signature`     signature help 
   `chain_lsp`     default chain for when a |lsp| client is attached to the buffer
   `chain_nolsp`   default chain for when no |lsp| client is available
+  `lsp_fuzzy`     use fuzzy matching for |lsp| by default
 
-If `border` is set to 'sides', it will still have some padding at the sides,
-but not at the top of the window (unlike 'solid').
+  `fuzzy_minchars`: for methods that support fuzzy completion, the minimum
+  number of characters required for the prefix to be completed in a fuzzy way
 
                                                   *chaincomplete-autocomplete*
 The `autocomplete` option can be:
@@ -218,7 +232,7 @@ The `autocomplete` option can be:
   `table`: see below
 
 The `autocomplete` option can be a table, for example: >
-
+>lua
   vim.g.chaincomplete = {
     autocomplete = {
       enabled = true,
@@ -228,6 +242,7 @@ The `autocomplete` option can be a table, for example: >
       },
     },
   }
+<
 
 This is also the default when the option is set to `true`.
 It means autocomplete is enabled, needs 3 |word| characters to trigger, and
@@ -241,7 +256,7 @@ Triggers are characters that will invoke the completion popup during
 autocompletion, ignoring prefix length.
 
 The default triggers are:
->
+>lua
   triggers = {
     ['lua'] = { '.', ':' },
   },
@@ -253,20 +268,20 @@ define too many trigger characters, possibly disrupting signatures or
 completion, and I dislike that.
 
 There are several ways to use/define triggers:
->
+>lua
   triggers = false
 <
     No triggers will be used.
->
+>lua
   triggers = true
 <
     This will only use triggers provided by lsp clients, when they do.
->
+>lua
   triggers = { '.', '->' }
 <
     This will use the same triggers for all filetypes. Lsp triggers will be
     ignored.
->
+>lua
   triggers = {
     ['*'] =   { '.' }, -- fallback, disables lsp triggers
     ['lua'] = { '.', ':' },
@@ -297,7 +312,7 @@ chain. Methods can be async or not (blocking). For most purposes, blocking
 methods work better, and are far easier to implement.
 
 To register a new method, you must call the function:
->
+>lua
   local chaincomplete = require'chaincomplete'
   chaincomplete.register_method(name, method)
 <
@@ -325,7 +340,7 @@ Methods using 'items' ~
 
   These methods use an internal |complete()| handler, so that you can just
   provide a list of |complete-items|.
->
+>lua
     chaincomplete.register_method('months', {
       can_try = wordchar_before,
       items = { 'January', 'February', ... },
@@ -334,7 +349,7 @@ Methods using 'items' ~
   This will register a method that can complete the months names.
   If 'items' is a function, it will be called, and should return a list-like
   table with completion items. So the previous example can be rewritten:
->
+>lua
     chaincomplete.register_method('months', {
       can_try = wordchar_before,
       items = function() return { 'January', 'February', ... } end,
@@ -347,7 +362,7 @@ Methods using 'handler' ~
   These methods use a custom handler, that is, a function that is supposed to
   call |complete()| on its own. Inside `method.handler()` you should generate
   the items, then call |complete()| on them.
->
+>lua
     chaincomplete.register_method('months', {
       can_try = wordchar_before,
       handler = my_months_handler_function,
@@ -380,7 +395,7 @@ Methods using 'async' ~
 
   Once 'items' have been set, the internal |complete()| handler will do the
   rest. One example:
->
+>lua
     local function my_async_months_handler_function(async)
       -- this does nothing async, but you should get the point
       async.items = { 'January', 'February', ... }
@@ -393,11 +408,9 @@ CREDITS                                                *chaincomplete-credits*
 ==============================================================================
 
 Bram Moolenar for Vim
-Neovim developers
-vim-mucomplete            https://github.com/lifepillar/vim-mucomplete
-Evgeni Chasnovski {1}     https://github.com/echasnovski/mini.nvim
+lifepillar                https://github.com/lifepillar/vim-mucomplete
+Evgeni Chasnovski         https://github.com/echasnovski/mini.completion
 
-  {1} for the lsp implementation
 
 
 LICENSE                                                *chaincomplete-license*

@@ -1,116 +1,62 @@
-local settings = require'chaincomplete.settings'
-local intern = require("chaincomplete.intern")
-local api = require("chaincomplete.api")
-local lsp = require("chaincomplete.lsp")
-local col = vim.fn.col
-local getline = vim.fn.getline
-local vmatch = vim.fn.match
-local sl = vim.fn.has("win32") == 1 and "\\" or "/"
+local Settings = require('chaincomplete.settings').settings
 
-local util = {}
+local api = require("nvim-lib").api
+local getline, mode, vmatch = vim.fn.getline, vim.fn.mode, vim.fn.match
+local trim_empty = vim.lsp.util.trim_empty_lines
+local convert_to_markdown = vim.lsp.util.convert_input_to_markdown_lines
 
-local capabilities = vim.fn.has("nvim-0.8.0") and "server_capabilities" or "resolved_capabilities"
+local U = {}
+
+U.make_position_params = vim.lsp.util.make_position_params
+U.stylize_markdown = vim.lsp.util.stylize_markdown
 
 --- Get N characters before cursor.
 --- @param length number: the number of characters
---- @return string
-local function prefix(length)
-  local c = col(".")
-  return c > length and getline("."):sub(c - length, c - 1) or ""
+--- @return string|nil
+function U.get_prefix(c, length)
+  return c > length and getline('.'):sub(c - length, c - 1)
 end
 
---- If characters before cursor can trigger autocompletion, when enabled.
---- Here, lsp triggers will only be checked if there are no trigger patterns
---- defined for the current filetype.
---- @return boolean
-function util.can_autocomplete()
-  local ac = intern.autocomplete
-  local tt = intern.trigpats
-  local coln = col(".")
-  if coln < (ac.prefix or 3) then
-    return false
+--- Set method omnifunc/completefunc if necessary.
+--- @param method table
+function U.check_funcs(method)
+  if method.omnifunc and vim.o.omnifunc ~= method.omnifunc then
+    vim.o.omnifunc = method.omnifunc
+  elseif method.completefunc and vim.o.completefunc ~= method.completefunc then
+    vim.o.completefunc = method.completefunc
   end
-  local chars = prefix(ac.prefix or 3)
-  local last = chars:match("%S$")
-  if not last then
-    return false
-  elseif ac.prefix then
-    if vmatch(chars, "^\\k\\+$") ~= -1 then -- keyword characters
-      return true
-    end
-  end
-  if not tt and ac.triggers and lsp.has_client_running() then
-    return lsp.is_completion_trigger(last)
-  elseif tt then
-    for _, t in ipairs(tt) do -- trigger characters
-      if chars:match(t .. "$") then
-        return true
-      end
-    end
-  end
-  return false
 end
 
---- If cursor is preceded by trigger characters.
---- This is not for autocompletion, rather for when attempting methods, so we
---- always accept lsp triggers when available.
---- @return boolean
-function util.trigger_before()
-  local tt = intern.trigpats
-  local chars = prefix(3)
-  if lsp.has_client_running() then
-    return lsp.is_completion_trigger(chars:match("%S$"))
-  elseif tt then
-    for _, t in ipairs(tt) do
-      if chars:match(t .. "$") then
-        return true
-      end
-    end
+--- Ensure the first item is selected during manual completion.
+--- `noselect` must be true if autocompletion is enabled.
+function U.noselect(enable)
+  if enable and not Settings.noselect then
+    Settings.noselect = true
+    vim.opt.completeopt:append('noselect')
+  elseif not enable and Settings.noselect then
+    Settings.noselect = false
+    vim.opt.completeopt:remove('noselect')
   end
-  return false
 end
 
---- If character before cursor is a 'word' character.
---- @return boolean
-function util.wordchar_before()
-  return prefix(1):match("[%w_]")
-end
-
---- If character before cursor is a 'word' character or punctuation.
---- @return boolean
-function util.filechar_before()
-  local c = prefix(1)
-  return c == sl or c:match("[%-%~%._%w]")
-end
-
---- Default chain for current buffer.
---- @return table chain
-function util.default_chain()
-  if vim.o.omnifunc == "v:lua.vim.lsp.omnifunc" then
-    return settings.chain_lsp
+--- Set the completeopt `menuone` flag.
+--- `menuone` must be true if autocompletion is enabled.
+function U.menuone(enable)
+  if enable and not Settings.menuone then
+    Settings.menuone = true
+    vim.opt.completeopt:append('menuone')
+  elseif not enable and Settings.menuone then
+    Settings.menuone = false
+    vim.opt.completeopt:remove('menuone')
   end
-  for _, client in pairs(vim.lsp.buf_get_clients()) do
-    if client[capabilities].completion then
-      return settings.chain_lsp
-    end
-  end
-  return settings.chain_nolsp
-end
-
---- Character to the left of the cursor.
---- @return string
-function util.get_left_char()
-  local line = api.current_line()
-  local coln = api.get_cursor(0)[2]
-
-  return string.sub(line, coln, coln)
 end
 
 --- Remove noise from markdown lines.
 ---@param lines table
 ---@return table
-function util.sanitize_markdown(lines)
-  for n, _ in ipairs(lines) do
+function U.sanitize_markdown(lines)
+  lines = trim_empty(convert_to_markdown(lines))
+  for n in ipairs(lines) do
     lines[n] = lines[n]:gsub("\\(.)", "%1") -- spurious backslashes
     lines[n] = lines[n]:gsub("{{{%d", "") -- fold markers
     lines[n] = lines[n]:gsub("%[(.-)%]%(.-%)", "%1") -- links
@@ -118,6 +64,24 @@ function util.sanitize_markdown(lines)
   return lines
 end
 
-return util
+function U.is_insert_mode()
+  return mode():match('[iR]')
+end
+
+function U.convert_to_markdown(lines)
+  return trim_empty(convert_to_markdown(lines))
+end
+
+--- Compute start position of latest keyword.
+function U.get_completion_start()
+  local col = api.win_get_cursor(0)[2]
+  local line_to_cursor = api.get_current_line():sub(1, col)
+  local pos = vmatch(line_to_cursor, '\\k*$')
+  if pos >= 0 then
+    return pos, line_to_cursor:sub(pos + 1, col)
+  end
+end
+
+return U
 
 --- vim: ft=lua et ts=2 sw=2 fdm=expr

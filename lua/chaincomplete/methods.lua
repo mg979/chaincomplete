@@ -1,98 +1,84 @@
-local util = require'chaincomplete.util'
-local lsp = require("chaincomplete.lsp")
+local Keys = require('nvim-lib').nvim.keycodes
 
-local wordchar_before = util.wordchar_before
-local trigger_before = util.trigger_before
-local filechar_before = util.filechar_before
-
-local function try_omni() -- {{{1
-  return vim.o.omnifunc ~= "" and (wordchar_before() or trigger_before())
-end
-
-local function try_lsp() -- {{{1
-  local client = lsp.get_buf_client()
-  if not client or client.is_stopped() then
-    return false
-  end
-  return wordchar_before() or trigger_before()
-end
-
-local function try_user() -- {{{1
-  return vim.o.completefunc ~= "" and wordchar_before()
-end
-
-local function try_dict() -- {{{1
-  return vim.o.dictionary ~= "" and wordchar_before()
-end
-
-local function try_spell() -- {{{1
-  return vim.o.spell and wordchar_before()
-end
-
--- }}}
-
-return {
-  ["file"] = {
-    can_try = filechar_before,
-    keys = "\\<C-x>\\<C-f>",
+local methods = {
+  ['files'] = {
+    precond = false,
+    keys = Keys.CtrlX .. Keys.CtrlF,
+    use_triggers = '/',
   },
-  ["omni"] = {
-    can_try = try_omni,
-    keys = "\\<C-x>\\<C-o>",
+  ['omni'] = {
+    precond = 'omni',
+    keys = Keys.CtrlX .. Keys.CtrlO,
+    use_triggers = true,
   },
-  ["lsp"] = {
-    can_try = try_lsp,
-    keys = "\\<C-x>\\<C-o>",
-    omnifunc = "v:lua.Chaincomplete.mini.omnifunc",
+  ['lsp'] = {
+    precond = 'lsp',
+    keys = Keys.CtrlX .. Keys.CtrlO,
+    omnifunc = 'v:lua.Chaincomplete.omnifunc_sync',
+    use_triggers = true,
   },
-  ["user"] = {
-    can_try = try_user,
-    keys = "\\<C-x>\\<C-u>",
+  ['lspf'] = {
+    precond = 'lsp',
+    keys = Keys.CtrlX .. Keys.CtrlO,
+    omnifunc = 'v:lua.Chaincomplete.omnifunc_sync_fuzzy',
+    use_triggers = true,
   },
-  ["dict"] = {
-    can_try = try_dict,
-    keys = "\\<C-x>\\<C-k>",
+  ['user'] = {
+    precond = 'cfunc',
+    keys = Keys.CtrlX .. Keys.CtrlU,
   },
-  ["keyn"] = {
-    can_try = wordchar_before,
-    keys = "\\<C-x>\\<C-n>",
+  ['dictionary'] = {
+    precond = 'dict',
+    keys = Keys.CtrlX .. Keys.CtrlK,
   },
-  ["keyp"] = {
-    can_try = wordchar_before,
-    keys = "\\<C-x>\\<C-p>",
+  ['thesaurus'] = {
+    precond = 'thesaurus',
+    keys = Keys.CtrlX .. Keys.CtrlT,
+  },
+  ['keyn'] = {
+    precond = false,
+    keys = Keys.CtrlX .. Keys.CtrlN,
+  },
+  ['keyp'] = {
+    precond = false,
+    keys = Keys.CtrlX .. Keys.CtrlP,
     invert = true,
   },
-  ["line"] = {
-    can_try = wordchar_before,
-    keys = "\\<C-x>\\<C-l>",
+  ['line'] = {
+    precond = false,
+    keys = Keys.CtrlX .. Keys.CtrlL,
   },
-  ["incl"] = {
-    can_try = wordchar_before,
-    keys = "\\<C-x>\\<C-i>",
+  ['includes'] = {
+    precond = false,
+    keys = Keys.CtrlX .. Keys.CtrlI,
   },
-  ["defs"] = {
-    can_try = wordchar_before,
-    keys = "\\<C-x>\\<C-d>",
+  ['defines'] = {
+    precond = false,
+    keys = Keys.CtrlX .. Keys.CtrlD,
   },
-  ["tags"] = {
-    can_try = wordchar_before,
-    keys = "\\<C-x>\\<C-]>",
+  ['tags'] = {
+    precond = 'tags',
+    keys = Keys.CtrlX .. Keys['<C-]>'],
   },
-  ["spel"] = {
-    can_try = try_spell,
-    keys = "\\<C-x>s",
+  ['spell'] = {
+    precond = false,
+    keys = Keys.CtrlX .. 's',
   },
-  ["vim"] = {
-    can_try = wordchar_before,
-    keys = "\\<C-x>\\<C-v>",
+  ['vim'] = {
+    precond = false,
+    keys = Keys.CtrlX .. Keys.CtrlV,
   },
-  ["c-n"] = {
-    can_try = wordchar_before,
-    keys = "\\<C-n>",
+  ['c-n'] = {
+    precond = false,
+    keys = Keys.CtrlN,
   },
-  ["c-p"] = {
-    can_try = wordchar_before,
-    keys = "\\<C-p>",
+  ['c-p'] = {
+    precond = false,
+    keys = Keys.CtrlP,
     invert = true,
   },
 }
+
+return methods
+
+-- vim: ft=lua et ts=2 sw=2 fdm=marker

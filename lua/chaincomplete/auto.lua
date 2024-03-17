@@ -1,85 +1,67 @@
 -- local variables {{{1
-local api, nvim, tbl, arr = require("nvim-lib")()
-local settings = require("chaincomplete.settings")
-local intern = require("chaincomplete.intern")
-local timer
+local api, nvim, tbl = require("nvim-lib")()
+local U = require('chaincomplete.util')
+local GetChain = require('chaincomplete.chain').GetChain
+
 local pumvisible = vim.fn.pumvisible
-local wrap = vim.schedule_wrap
-local can_autocomplete = require("chaincomplete.util").can_autocomplete
-local open_popup = nvim.keycodes["<Plug>(AutoComplete)"]
+local col = vim.fn.col
+local vmatch = vim.fn.match
 --}}}
 
--------------------------------------------------------------------------------
--- Initialization, enable, disable, toggle
--------------------------------------------------------------------------------
 local auto = {}
 
-local function echo(verbose) -- Print current settings {{{1
-  if verbose then
-    print(string.format("autocomplete = %s", vim.inspect(settings.autocomplete)))
+local timer
+local plug = nvim.keycodes["<Plug>(AutoComplete)"]
+
+local get_prefix = U.get_prefix
+
+--- Whether characters before cursor can trigger autocompletion, when enabled.
+--- Here, lsp triggers will only be checked if there are no trigger patterns
+--- defined for the current filetype.
+--- @return boolean
+local function can_autocomplete()
+  local chain = GetChain()
+
+  -- not all methods are allowed to use triggers
+  chain.cur_trigger = false
+
+  local pre = chain.prefix
+  local tt = chain.trigpats
+  local coln = col('.')
+  if coln < (pre or 3) then
+    return false
   end
-end -- }}}
 
-function auto.set(toggle, args, verbose)
-  vim.cmd.redraw()
-  local ac = vim.tbl_extend("keep", {}, intern.autocomplete) -- copy
-
-  if toggle then -- if toggle {{{1
-    ac.enabled = not ac.enabled
-  elseif args == "on" then -- elseif on {{{1
-    ac.enabled = true
-  elseif args == "off" then -- elseif off {{{1
-    ac.enabled = false
-  elseif args == "triggers" then -- elseif triggers {{{1
-    ac.enabled = true
-    ac.prefix = false
-  elseif args == "reset" then -- elseif reset {{{1
-    -- keep the enabled state, but reset all the rest
-    ac.prefix = 3
-    ac.triggers = nil
-  elseif args ~= "" then -- elseif args {{{1
-    ac.enabled = true
-    ac.prefix = tonumber(args:match("%d+")) or false
-    ac.triggers = {}
-    for chars in args:gmatch("%p+") do
-      table.insert(ac.triggers, chars)
-    end
-    if #ac.triggers == 0 then
-      ac.triggers = nil
-    end
-  else -- else print current settings {{{1
-    return echo(true)
-  end -- }}}
-
-  -- update settings
-  settings.autocomplete = intern.set_autocomplete_opts(ac)
-  echo(verbose)
-
-  if ac.enabled then
-    vim.opt.completeopt:append("noselect")
-    intern.noselect = true
-    vim.cmd( -- enable autocommands {{{1
-      [[
-			augroup chaincomplete_auto
-			au!
-			autocmd FileType TelescopePrompt lua vim.b.autocomplete_disabled = true
-			autocmd InsertCharPre * noautocmd call v:lua.Chaincomplete.auto.check()
-			autocmd TextChangedI * noautocmd call v:lua.Chaincomplete.auto.start()
-			autocmd InsertLeave  * noautocmd call v:lua.Chaincomplete.auto.stop()
-			autocmd CompleteDonePre * noautocmd call v:lua.Chaincomplete.auto.halt()
-			augroup END
-			]]
-    ) -- }}}
-  else
-    intern.noselect = false
-    vim.opt.completeopt:remove("noselect")
-    vim.cmd( -- disable autocommands {{{1
-      [[
-			silent! au! chaincomplete_auto
-			silent! aug! chaincomplete_auto
-			]]
-    ) -- }}}
+  local chars = get_prefix(coln, pre or 3)
+  if not chars then
+    return false
   end
+
+  if pre and vmatch(chars, '^\\k\\+$') ~= -1 then
+    return true
+  end
+
+  local symbol = chars:match('[.$:<>"*/]$')
+  if not symbol then
+    return false
+  end
+
+  -- chain.triggers can be `true`, without defining the trigger themselves
+  -- use lsp triggers if possible
+  if not tt and chain.triggers and chain.lsp_triggers then
+    if tbl.contains(chain.lsp_triggers, symbol) then
+      chain.cur_trigger = symbol
+      return true
+    end
+  elseif tt then
+    for _, t in ipairs(tt) do -- trigger characters
+      if chars:match(t .. '$') then
+        chain.cur_trigger = symbol
+        return true
+      end
+    end
+  end
+  return false
 end
 
 -------------------------------------------------------------------------------
@@ -89,19 +71,21 @@ end
 --- Called on InsertCharPre, to ensure 'noselect' flag is enabled.
 --- Will also reset the 'halted' flag to resume autocompletion.
 function auto.check()
-  if not intern.noselect then
-    vim.opt.completeopt:append("noselect")
-    intern.noselect = true
-  end
+  U.noselect(true)
   auto.halted = false
 end
 
 --- Called on text changes in insert mode.
 function auto.start()
+  GetChain():reset()
   auto.stop()
-  if not auto.halted and not vim.b.autocomplete_disabled and pumvisible() == 0 then
+  if not auto.halted and pumvisible() == 0 then
     timer = vim.loop.new_timer()
-    timer:start(100, 0, wrap(auto.complete))
+    timer:start(100, 0, vim.schedule_wrap(auto.complete))
+  end
+  -- this seems to be needed to retrigger the popup consistently on <BS>
+  if GetChain().retrigger_on_BS then
+    auto.halted = false
   end
 end
 
@@ -117,7 +101,7 @@ end
 function auto.complete()
   auto.stop()
   if pumvisible() == 0 and can_autocomplete() then
-    api.feedkeys(open_popup, "m", false)
+    api.feedkeys(plug, "m", false)
   end
 end
 
@@ -125,6 +109,27 @@ end
 function auto.halt()
   auto.stop()
   auto.halted = true
+end
+
+local ID -- augroup id
+
+function auto.autocmds(chain)
+  if not ID and chain.autocomplete then
+    U.noselect(true)
+    U.menuone(true)
+    ID = nvim.augroup('chaincomplete-auto')({
+      { 'InsertCharPre', callback = auto.check },
+      { 'TextChangedP', callback = auto.check },
+      { 'TextChangedI', callback = auto.start },
+      { 'InsertLeave', callback = auto.stop },
+      { 'CompleteDone', callback = auto.halt },
+    })
+  elseif ID and not chain.autocomplete then
+    U.noselect(false)
+    U.menuone(false)
+    api.del_augroup_by_id(ID)
+    ID = nil
+  end
 end
 
 return auto
